@@ -3,4 +3,9 @@
 # To modify the layout, see https://jekyllrb.com/docs/themes/#overriding-theme-defaults
 
 layout: home
+title: Home
 ---
+
+Hi there! I'm nyanpasu64 and I don't bite... maybe a little... *noms*
+
+This is my blog about programming, DSP, and possibly computer music and chiptune, where I share things that others might enjoy or learn from.
