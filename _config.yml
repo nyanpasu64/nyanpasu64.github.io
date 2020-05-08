@@ -27,9 +27,7 @@ twitter_username: nyanpasu64
 github_username: nyanpasu64
 
 # Build settings
-theme: jekyll-theme-leap-day
-show_downloads: "false"
-
+theme: minima
 plugins:
   - jekyll-feed
 
