@@ -18,7 +18,7 @@ In Python, if `x` is a list (actually a resizable contiguous array), `x[0]` is t
 
 In C++, `iterator` and `reverse_iterator` both point to fenceposts between items. An array can have valid iterators or reverse iterators pointing to "before the first element", "after the last element", or anywhere in between.
 
-Dereferencing a forward iterator accesses the element *after* the gridline, much like `*ptr` with a raw pointer. However, dereferencing a reverse iterator accesses the element *before* the gridline, which compiles to `*(ptr - 1)`. As a result, `reverse_iterator` appears to be slightly slower on actual CPUs: https://stackoverflow.com/a/2549554.
+Dereferencing a forward iterator accesses the element *after* the gridline, much like `*ptr` with a raw pointer. However, dereferencing a reverse iterator accesses the element *before* the gridline, which compiles to `*(ptr - 1)`. As a result, `reverse_iterator` appears to be slightly slower on actual CPUs: <https://stackoverflow.com/a/2549554>.
 
 cppreference.com has a diagram attempting to explain `reverse_iterator`:
 
@@ -34,7 +34,7 @@ You can choose to index from 0 or 1. Indexing from 0 or 1 is somewhat orthogonal
 
 The R language operates under this mental model. Much like mathematical notation, indexes begin at 1, and ranges of items `a[1:5]` are inclusive on both ends. In fact, `1:5` generates a vector of integers `1 2 3 4 5`.
 
-The item-based mental model (with inclusive ranges) is useful in some cases, for example in DSP. However I moved that to a separate article since it's not closely related to indexing.
+The item-based mental model (with inclusive ranges) is useful in some cases, for example in DSP. However I moved that to a separate article, ["Describing convolution using item-based indexing and inclusive ranges"](../describing-convolution-using-item-based-indexing-and-inclusive-ranges), since it's not closely related to indexing.
 
 ## Gridline-based slicing and closed-closed indexing
 
@@ -108,7 +108,7 @@ A related issue is in text editing. If you're in a long paragraph and press the 
 
 The same behavior occurs if a single very long word is wrapped across multiple lines. And each program listed above behaves identically, regardless if you're wrapping a paragraph or single word.
 
-This behavior was briefly described in https://lord.io/blog/2019/text-editing-hates-you-too/ "Affinity". That site only mentions single long words wrapped across multiple lines.
+This behavior was briefly described in <https://lord.io/blog/2019/text-editing-hates-you-too/> "Affinity". That site only mentions single long words wrapped across multiple lines.
 
 Reality is awful. There is no perfect solution.
 
