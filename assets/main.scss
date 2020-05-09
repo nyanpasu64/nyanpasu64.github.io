@@ -4,7 +4,7 @@
 
 $base-font-family: sans-serif;
 $code-font-family: monospace;
-$base-font-size: 14px;
+$base-font-size: 15px;
 
 @import "minima";
 
@@ -42,4 +42,8 @@ h1 {
 
 hr {
   margin-bottom: 15px;
+}
+
+blockquote, .site-title, .post-title {
+  letter-spacing: 0px !important;
 }
