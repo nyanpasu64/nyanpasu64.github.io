@@ -14,7 +14,10 @@ Source: <https://gitlab.com/nyanpasu64/exotracker-cpp/-/tree/timeline-editor> (c
 
 ## Demo notes
 
+- **Press Space to enable note entry, and Enter to play.** Unfortunately, note preview is not supported yet.
+- ExoTracker uses a FamiTracker-style piano layout.
 - Only Famicom/NES APU1 is supported. Some demo songs have dual APU1 which can be used for composing.
+- Notes, instruments, and volumes are supported. Effects are not.
 - Try passing in names of sample documents as command-line arguments. Listed in order from most to least useful:
     - Partial songs: `dream-fragments`, `world-revolution` (default song)
     - `empty` (add your own notes)
