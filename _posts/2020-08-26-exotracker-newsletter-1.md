@@ -8,9 +8,9 @@ I just finished implementing timeline entry editing. Since I have school coming 
 
 ## Demo download
 
-Windows 64-bit: <https://ci.appveyor.com/api/buildjobs/vhkwr9pbarehr2j1/artifacts/exotracker-v1.0.59-dev.7z>
+Windows 64-bit: <https://ci.appveyor.com/api/buildjobs/3e0uv6sxov74g50d/artifacts/exotracker-v1.0.60-dev.7z>
 
-Source: <https://gitlab.com/nyanpasu64/exotracker-cpp/-/tree/timeline-editor> (currently commit 7d7dd947). It only compiles in recent GCC and Clang (only tested Clang 10), due to using statement expressions.
+Source: <https://gitlab.com/nyanpasu64/exotracker-cpp/-/tree/timeline-editor> (currently commit d5386ea0). It only compiles in recent GCC and Clang (only tested Clang 10), due to using statement expressions.
 
 ## Demo notes
 
