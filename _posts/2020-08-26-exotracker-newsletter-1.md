@@ -8,9 +8,9 @@ I just finished implementing timeline entry editing. Since I have school coming 
 
 ## Demo download
 
-Windows 64-bit: <https://ci.appveyor.com/api/buildjobs/bb37g6b38wh88m9f/artifacts/exotracker-v1.0.58-dev.7z>
+Windows 64-bit: <https://ci.appveyor.com/api/buildjobs/vhkwr9pbarehr2j1/artifacts/exotracker-v1.0.59-dev.7z>
 
-Source: <https://gitlab.com/nyanpasu64/exotracker-cpp/-/tree/timeline-editor> (currently commit dd0f7377) It only compiles in recent GCC and Clang (only tested Clang 10), due to using statement expressions.
+Source: <https://gitlab.com/nyanpasu64/exotracker-cpp/-/tree/timeline-editor> (currently commit 7d7dd947). It only compiles in recent GCC and Clang (only tested Clang 10), due to using statement expressions.
 
 ## Demo notes
 
@@ -81,3 +81,5 @@ It is also intended to have a similar degree of flexibility as a DAW like Reaper
 If you find any crash bugs, let me know. (Some tricky-to-get-right areas were deleting the last row in the timeline, or deleting a long row and the cursor moves into the next, shorter, row.)
 
 If you have any UI or behavior suggestions, tell me too. (I personally think I got the code reasonably watertight, but the UI behavior is a toss-up and I have no clue how people will react.)
+
+You can report issues at <https://gitlab.com/nyanpasu64/exotracker-cpp/-/issues>.
