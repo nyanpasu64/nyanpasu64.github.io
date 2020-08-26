@@ -24,7 +24,7 @@ author: nyanpasu64
 description: Adventures in programming, DSP, and chiptune
 baseurl: "" # the subpath of your site, e.g. /blog
 url: "" # the base hostname & protocol for your site, e.g. http://example.com
-twitter_username: nyanpasu64
+# twitter_username: nyanpasu64
 github_username: nyanpasu64
 
 # Build settings
