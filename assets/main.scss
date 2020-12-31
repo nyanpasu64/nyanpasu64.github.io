@@ -21,6 +21,9 @@ h1 {
   font-size: 24pt !important;
   // margin-top: 25px;
 }
+h1 code {
+  font-size: 90%;
+}
 .post-content {
   h2 {
     font-size: 20pt !important;
@@ -32,6 +35,10 @@ h1 {
   h4 {
     font-size: 15pt !important;
     font-style: italic;
+  }
+
+  h2 code, h3 code, h4 code {
+    font-size: 90%;
   }
 
   // h1, h2, h3, h4, h5, h6 {
