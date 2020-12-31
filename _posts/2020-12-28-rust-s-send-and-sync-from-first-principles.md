@@ -73,6 +73,11 @@ Less obvious is that `&T: Sync` requires that `T: Sync`. Why is this the case?
 
 (Technically `Rc<i32>` also acts like `&mut T` in its ability to drop `T`, but it doesn't matter because it's always `!Send` and `!Sync`.)
 
+### Sources
+
+- [`impl<T> !Send for Rc<T>`](https://doc.rust-lang.org/std/rc/struct.Rc.html#impl-Send)
+- [`impl<T> !Sync for Rc<T>`](https://doc.rust-lang.org/std/rc/struct.Rc.html#impl-Sync)
+
 ## Smart pointers: `Arc<T>` (atomic refcounting)
 
 `Arc<T>` is a doozy. It acts like `&(Atomic<RefCount>, T)` in its ability to alias `T`, and `T`/`&mut T` in its ability to drop or `get_mut` or `try_unwrap` the `T`.
@@ -85,6 +90,11 @@ And `Arc<T>: Sync` requires `T: Send`, because if `T: !Send` but `Arc<T>: Sync`,
 
 (`Atomic<RefCount>` is `Send+Sync` and does not contribute to `Arc`'s thread safety.)
 
+### Sources
+
+- [`impl<T> Send for Arc<T> where T: Send + Sync`](https://doc.rust-lang.org/std/sync/struct.Arc.html#impl-Send)
+- [`impl<T> Sync for Arc<T> where T: Send + Sync`](https://doc.rust-lang.org/std/sync/struct.Arc.html#impl-Sync)
+
 ## Mutexes
 
 `Mutex<T>` is `Sync` even if `T` isn't, because if multiple threads obtain `&Mutex<T>`, they can't all obtain `&T`.
@@ -94,6 +104,11 @@ And `Arc<T>: Sync` requires `T: Send`, because if `T: !Send` but `Arc<T>: Sync`,
 `Mutex<T>: Send` requires `T: Send` because `Mutex` is a value type.
 
 `MutexGuard<T>` is `!Send` because it's **bound to the constructing thread** (on some OSes, you can't send or exchange "responsibility for freeing a mutex" to another thread). Otherwise it acts like a `&mut T`, which is `Sync` if T is `Sync`. Additionally you can extract a `&mut T` (which is `Send`) using `&mut *guard`.
+
+### Sources
+
+- [`Mutex` traits](https://doc.rust-lang.org/std/sync/struct.Mutex.html#impl-Send)
+- [`MutexGuard` traits](https://doc.rust-lang.org/std/sync/struct.MutexGuard.html#impl-Send)
 
 ### Contrived corner cases
 
