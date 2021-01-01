@@ -37,6 +37,8 @@ Most primitive types (like `i32`) are `Send+Sync`. They can be read through shar
 
 (Sidenote) Technically, `&mut T` allows swapping the `T` (which cannot panic), but prohibits moving the `T`. This is because moving invalidates the `&mut T`, and the `&mut T`s and `T` it's constructed from.
 
+For a demonstration of `&mut T`, see ["Example: Passing `&mut (T: Send)` between threads"](#example-passing-mut-t-send-between-threads) section in this page.
+
 ### Where these semantics are defined
 
 - [`impl Send for &mut T where T: Send`](https://doc.rust-lang.org/std/primitive.reference.html#impl-Send-1)
@@ -59,7 +61,7 @@ Less obvious is that `&T: Sync` requires that `T: Sync`. Why is this the case?
 
 - [`impl Send for &T where T: Sync`](https://doc.rust-lang.org/std/primitive.reference.html#impl-Send)
 - `impl Sync for &T where T: Sync` is not in the page...
-  - For a demonstration, see the [Example: `&T: Send or Sync` both depend on `T: Sync`](#example-t-send-or-sync-both-depend-on-t-sync) section in this page.
+  - For a demonstration, see the ["Example: `&T: Send or Sync` both depend on `T: Sync`"](#example-t-send-or-sync-both-depend-on-t-sync) section in this page.
 
 ## Interior mutability
 
