@@ -97,6 +97,8 @@ And `Arc<T>: Sync` requires `T: Send`, because if `T: !Send` but `Arc<T>: Sync`,
 - [`impl<T> Send for Arc<T> where T: Send + Sync`](https://doc.rust-lang.org/std/sync/struct.Arc.html#impl-Send)
 - [`impl<T> Sync for Arc<T> where T: Send + Sync`](https://doc.rust-lang.org/std/sync/struct.Arc.html#impl-Sync)
 
+This was also discussed in a [Stack Overflow question](https://stackoverflow.com/questions/41909811/why-does-arct-require-t-to-be-both-send-and-sync-in-order-to-be-send).
+
 ## Mutexes
 
 `Mutex<T>` is `Sync` even if `T` isn't, because if multiple threads obtain `&Mutex<T>`, they can't all obtain `&T`.
