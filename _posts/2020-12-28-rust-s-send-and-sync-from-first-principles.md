@@ -129,20 +129,11 @@ When asking about this topic, I was pointed to the [Rust API guidelines](https:/
 
 ----
 
-I personally encountered this topic when I used an `Arc` internally for the `flip-cell` crate (which turns out to be equivalent to [Oddio's `Swap` type](https://github.com/Ralith/oddio/blob/main/src/swap.rs) and the [`triple-buffer` crate](https://github.com/HadrienG2/triple-buffer)).
+I personally encountered this topic when I used an `Arc` internally for [the `flip-cell` crate](https://github.com/nyanpasu64/spectro2/blob/master/flip-cell/src/lib.rs) (which turns out to be equivalent to [Oddio's `Swap` type](https://github.com/Ralith/oddio/blob/main/src/swap.rs) and the [`triple-buffer` crate](https://github.com/HadrienG2/triple-buffer)).
 
-In my project, I defined a struct `FlipReader<T>` containing an `Arc<FlipCell<T>>`:
+`Arc<T>: Sync` is only safe if `T: Send`, not just `T: Sync`; this is because another thread can look at an `&Arc<T>`, clone it, and obtain an `Arc<T>` sharing ownership over the same object. But if we create a type `FlipReader<T>` ([source](https://github.com/nyanpasu64/spectro2/blob/05561a21d85fc5fc0e8e92140edf01d6b64401bc/flip-cell/src/lib.rs#L188-L201)) which contains an `Arc<Wrapper<T>>` but prohibits cloning it, then making `FlipReader<T>: Sync` does not allow another thread to take shared ownership of `Wrapper<T>`, so the `Wrapper<T>: Send` trait bound is unnecessary.
 
-```rs
-pub struct FlipReader<T> {
-    cell: Arc<FlipCell<T>>,
-    ...
-}
-```
-
-<!-- Because I chose not to implement `FlipCell<T>: Sync` for any `T`, such an `Arc` cannot be safely shared between threads. -->
-
-The reason `Arc<T>: Sync` requires `T: Send` in addition to `T: Sync` is because another thread can look at an `&Arc<T>`, clone it, and acquire ownership over an `Arc<T>` pointing to the same object. But if our `FlipReader<T>` type does not expose a way for outside code to clone the `Arc<FlipCell<T>>`, then it's sound for `FlipReader<T>: Sync` to only require `FlipCell<T>: Sync` (and not `Send`). Had the struct `Arc<T>` required `T: Send + Sync` to even be constructed, `Arc` would be crippled as a building block for unsafe code.
+Had the struct `Arc<T>` required `T: Send + Sync` to even be constructed, `Arc` would be crippled as a building block for unsafe code.
 
 ## Example: Passing `&mut (T: Send)` between threads
 
