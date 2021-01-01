@@ -1,10 +1,10 @@
 ---
 layout: post
-title: "Rust's Send and Sync from first principles: an unsafe tour"
-date: 2020-12-28 04:20 -0800
+title: An unsafe tour of Rust's Send and Sync
+date: 2021-01-01 06:54 -0800
 ---
 
-Rust's concurrency safety is based around the `Send` and `Sync` traits. For people writing safe code, you don't really need to understand these traits on a deep level, only enough to satisfy the compiler when it spits errors at you (or switch from `std` threads to Crossbeam scoped threads to make errors go away). However if you're writing unsafe concurrent code by wrapping an `UnsafeCell`, you need to understand `Send` and `Sync` at a more fundamental level, to pick the appropriate trait bounds when writing `unsafe impl Send/Sync` statements, or add the appropriate `PhantomData<T>` to your types.
+Rust's concurrency safety is based around the `Send` and `Sync` traits. For people writing safe code, you don't really need to understand these traits on a deep level, only enough to satisfy the compiler when it spits errors at you (or switch from `std` threads to Crossbeam scoped threads to make errors go away). However if you're writing unsafe concurrent code, such as having a `&UnsafeCell<T>` hand out `&T` and `&mut T`, you need to understand `Send` and `Sync` at a more fundamental level, to pick the appropriate trait bounds when writing `unsafe impl Send/Sync` statements, or add the appropriate `PhantomData<T>` to your types.
 
 In this article, I will explore the precise behavior of `Send` and `Sync`, and explain *why* the standard library's trait bounds are the way they are.
 
@@ -14,7 +14,7 @@ In this article, I will explore the precise behavior of `Send` and `Sync`, and e
 >
 > [[Source]](https://www.reddit.com/r/rust/comments/9elom2/why_does_implt_send_for_mut_t_require_t_send/)
 
-Recommended reading: ["Rust: A unique perspective"](https://limpet.net/mbrubeck/2019/02/07/rust-a-unique-perspective.html) gives a conceptual overview of the mechanics (unique and shared references) I will analyze in more depth.
+I recommended first reading ["Rust: A unique perspective"](https://limpet.net/mbrubeck/2019/02/07/rust-a-unique-perspective.html). This article gives a conceptual overview of the mechanics (unique and shared references) I will analyze in more depth.
 
 ## Defining Sync and Send
 
@@ -107,7 +107,7 @@ This was also discussed in a [Stack Overflow question](https://stackoverflow.com
 
 `Mutex<T>: Send` requires `T: Send` because `Mutex` is a value type.
 
-`MutexGuard<T>` is `!Send` because it's **bound to the constructing thread** (on some OSes, you can't send or exchange "responsibility for freeing a mutex" to another thread). Otherwise it acts like a `&mut T`, which is `Sync` if T is `Sync`. Additionally you can extract a `&mut T` (which is `Send`) using `&mut *guard`.
+`MutexGuard<T>` is `!Send` because it's **bound to the constructing thread** (on some OSes including Windows, you can't send or exchange "responsibility for freeing a mutex" to another thread). Otherwise it acts like a `&mut T`, which is `Sync` if T is `Sync`. Additionally you can extract a `&mut T` (which is `Send`) using `&mut *guard`.
 
 ### Sources
 
