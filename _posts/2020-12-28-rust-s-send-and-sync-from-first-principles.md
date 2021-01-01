@@ -116,6 +116,34 @@ And `Arc<T>: Sync` requires `T: Send`, because if `T: !Send` but `Arc<T>: Sync`,
 
 `Mutex<MutexGuard<i32>>` is `!Sync` because `MutexGuard<i32>` is `!Send`.
 
+## Thoughts on trait bounds and flexibility for users
+
+Why does `Arc<T>` not have a `where T: Send + Sync` trait bound, but instead allows you to construct `Arc<T>` for any `T` (but just not send/share it across threads)?
+
+I've heard that you should avoid putting trait bounds in types, but (if I remember correctly) instead in method implementations, or (in the case of `Arc`) in conditional `Send`/`Sync` implementations. One person said:
+
+> The reason the restrictions are usually on the implementations rather than on the type in general is that you don't usually know every possible implementation
+> If you later realize you can add other functionality, you can just add additional impl blocks with different restrictions, whereas if they were on the type you would potentially have to worry about unifying the restrictions (which can be really awkward) or removing them altogether
+
+When asking about this topic, I was pointed to the [Rust API guidelines](https://rust-lang.github.io/api-guidelines/about.html), but I couldn't find any discussion of this issue.
+
+----
+
+I personally encountered this topic when I used an `Arc` internally for the `flip-cell` crate (which turns out to be equivalent to [Oddio's `Swap` type](https://github.com/Ralith/oddio/blob/main/src/swap.rs) and the [`triple-buffer` crate](https://github.com/HadrienG2/triple-buffer)).
+
+In my project, I defined a struct `FlipReader<T>` containing an `Arc<FlipCell<T>>`:
+
+```rs
+pub struct FlipReader<T> {
+    cell: Arc<FlipCell<T>>,
+    ...
+}
+```
+
+<!-- Because I chose not to implement `FlipCell<T>: Sync` for any `T`, such an `Arc` cannot be safely shared between threads. -->
+
+The reason `Arc<T>: Sync` requires `T: Send` in addition to `T: Sync` is because another thread can look at an `&Arc<T>`, clone it, and acquire ownership over an `Arc<T>` pointing to the same object. But if our `FlipReader<T>` type does not expose a way for outside code to clone the `Arc<FlipCell<T>>`, then it's sound for `FlipReader<T>: Sync` to only require `FlipCell<T>: Sync` (and not `Send`). Had the struct `Arc<T>` required `T: Send + Sync` to even be constructed, `Arc` would be crippled as a building block for unsafe code.
+
 ## Example: Passing `&mut (T: Send)` between threads
 
 Cell is `Send` but not `Sync`. Both `Cell` and `&mut Cell` can be passed between threads. The following code builds as-is, but not if `&mut` is changed to `&`.
