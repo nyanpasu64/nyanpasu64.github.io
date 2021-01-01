@@ -201,7 +201,7 @@ error[E0277]: `Cell<i32>` cannot be shared between threads safely
   = note: required because of the requirements on the impl of `Send` for `&Cell<i32>`
 ```
 
-If `T: !Send + Sync` (for example `MutexGuard`), then `&T` is still `Send + Sync`. (`T: Send` or not doesn't matter, because we `&T` has no means of producing `&mut T`.)
+If `T: !Send + Sync` (for example `MutexGuard`), then `&T` is still `Send + Sync`. (This makes sense, because `T: !Send` only constrains the behavior of a `&mut T`, and should not affect the properties of a `&T`.)
 
 ```rust
 use std::marker::PhantomData;
