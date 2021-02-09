@@ -20,7 +20,7 @@ I recommended first reading ["Rust: A unique perspective"](https://limpet.net/mb
 
 `T: Send` means `T` and `&mut T` (which allow dropping `T`) can be passed between threads. `T: Sync` means `&T` (which allows shared/aliased access to `T`) can be passed between threads. Either or both may be true for any given type. `T: Sync` ≡ `&T: Send` (by definition).
 
-One way that `T: !Sync` can occur is **if a type has non-atomic interior mutability**. This means that every `&T` (there can be more than one) can mutate `T` at the same time non-atomically, causing data races if a `&T` is sent to another thread. This includes `Cell<T>` and `RefCell<T>`, as well as `Rc<T>` (which points to a `Cell<RefCount>`).
+One way that `T: !Sync` can occur is **if a type has non-atomic interior mutability**. This means that every `&T` (there can be more than one) can mutate `T` at the same time non-atomically, causing data races if a `&T` is sent to another thread. `T: !Sync` includes `Cell<V>` and `RefCell<V>`, as well as `Rc<V>` (which acts like `&(Cell<RefCount>, V)`).
 
 `T: !Send` **if a type is bound to the current thread**. Examples:
 
@@ -42,7 +42,7 @@ For a demonstration of `&mut T`, see ["Example: Passing `&mut (T: Send)` between
 ### Where these semantics are defined
 
 - [`impl Send for &mut T where T: Send`](https://doc.rust-lang.org/std/primitive.reference.html#impl-Send-1)
-- `impl Sync for &mut T where T: Sync` is not in the page...
+- `impl Sync for &mut T where T: Sync` is not on the page...
 - [`impl Send for Box<T> where T: Send`](https://doc.rust-lang.org/std/boxed/struct.Box.html#impl-Send)
 - [`impl Sync for Box<T> where T: Sync`](https://doc.rust-lang.org/std/boxed/struct.Box.html#impl-Sync)
 
@@ -54,13 +54,13 @@ By definition, you can `Send` `&T` instances to other threads iff `T` is `Sync`.
 
 Less obvious is that `&T: Sync` requires that `T: Sync`. Why is this the case?
 
-- Why must `T` be `Sync`? If we want `&T` to be `Sync`. This means `&&T` (which is clonable/copyable) is `Send`, allowing multiple threads to concurrently obtain `&&T` and `&T`, which is only legal if `T` is `Sync`.
+- Why must `T` be `Sync`? We want `&T: Sync`. This means `&&T` (which is clonable/copyable) is `Send`, allowing multiple threads to concurrently obtain `&&T` and `&T`, which is only legal if `T: Sync`.
 - Why is `&&T: Send` legal? Because `&T` lacks interior mutability (a `&&T` can't modify the `&T` to point to a different `T`).
 
 ### Sources
 
 - [`impl Send for &T where T: Sync`](https://doc.rust-lang.org/std/primitive.reference.html#impl-Send)
-- `impl Sync for &T where T: Sync` is not in the page...
+- `impl Sync for &T where T: Sync` is not on the page...
   - For a demonstration, see the ["Example: `&T: Send or Sync` both depend on `T: Sync`"](#example-t-send-or-sync-both-depend-on-t-sync) section in this page.
 
 ## Interior mutability
@@ -218,3 +218,5 @@ fn main() {
     ensure_send(&foo);
 }
 ```
+
+*This blog post was edited on 2021-02-09 to fix minor errors and clarify `Rc<V>`.*
