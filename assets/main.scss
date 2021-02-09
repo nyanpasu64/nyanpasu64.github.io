@@ -3,13 +3,14 @@
 ---
 
 $base-font-family: "Source Sans Pro", "Segoe UI", sans-serif;
-$code-font-family: "mononoki", "Consolas", "DejaVu Sans Mono", monospace;
+$code-font-family: "mononoki", "SFMono-Regular", "Consolas", "DejaVu Sans Mono", "Menlo", monospace;
 $base-font-size: 15px;
 
 @import "minima";
 
 pre, code {
   font-size: 13px;
+  font-family: $code-font-family;
 }
 
 // // h1,
