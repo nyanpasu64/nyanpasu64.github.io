@@ -14,7 +14,7 @@ ExoTracker's central feature is that events/notes no longer have to be quantized
 
 (tl;dr: Skip forwards to ["Per-digit cursors"](#per-digit-cursors) where the problems start.)
 
-{% include img-srcset.html src="exotracker_full_subcolumn_cursor.png" alt="In ExoTracker, each subcolumn has a different background color. The instrument subcolumn has two digits plus padding. The cursor is located in the instrument subcolumn, and takes up both digits plus padding." %}
+{% include img-125.html src="exotracker_full_subcolumn_cursor.png" alt="In ExoTracker, each subcolumn has a different background color. The instrument subcolumn has two digits plus padding. The cursor is located in the instrument subcolumn, and takes up both digits plus padding." %}
 
 As a result, many tracker conventions must be adapted to work with off-grid notes.
 
@@ -36,29 +36,29 @@ As a result, many tracker conventions must be adapted to work with off-grid note
 
 Everything was more-or-less working, until I added per-digit cursors and the setup broke down. Suddenly the cursor width became highly inconsistent; the cursor is wider when you place it in the leftmost or rightmost digit of a subcolumn.
 
-{% include img-srcset.html src="exotracker_cursor_positions.gif" alt="The effect subcolumn has three positions, or one character plus two digits. The cursor is wider in the left and right subcolumn, and narrower in the center." %}
+{% include img-125.html src="exotracker_cursor_positions.gif" alt="The effect subcolumn has three positions, or one character plus two digits. The cursor is wider in the left and right subcolumn, and narrower in the center." %}
 
 So I can make the cursor narrower... now there's a gap around the cursor. And several people have said the gap looks very weird, so this isn't a good solution.
 
-{% include img-srcset.html src="exotracker_gap_around_cursor.png" alt="There is a gap between the left border of the subcolumn's background, and the cursor's left boundary. The same issue occurs with the right of each subcolumn." %}
+{% include img-125.html src="exotracker_gap_around_cursor.png" alt="There is a gap between the left border of the subcolumn's background, and the cursor's left boundary. The same issue occurs with the right of each subcolumn." %}
 
-{% include img-srcset.html src="exotracker_gap_around_cursor_2.png" alt="There is a gap between the note subcolumn's boundaries and the cursor's boundaries." %}
+{% include img-125.html src="exotracker_gap_around_cursor_2.png" alt="There is a gap between the note subcolumn's boundaries and the cursor's boundaries." %}
 
 This is actually what FamiTracker does too, but it doesn't look ugly because there aren't background stripes.
 
-{% include img-srcset.html src="famitracker_cursor_positions.gif" alt="I screen-recorded all cursor positions of FamiTracker into an animated GIF, and overlayed the frames into a single screenshot. There are gaps to the left and right of each subcolumn (note, instrument, volume, and effect). The composite screenshot is ugly." %}
+{% include img-125.html src="famitracker_cursor_positions.gif" alt="I screen-recorded all cursor positions of FamiTracker into an animated GIF, and overlayed the frames into a single screenshot. There are gaps to the left and right of each subcolumn (note, instrument, volume, and effect). The composite screenshot is ugly." %}
 
 So do I make the stripes narrower?
 
-{% include img-srcset.html src="exotracker_narrow_subcolumn_background.png" alt="The background color is confined to the width filled by text and selectable by the cursor. There are gray stripes around each subcolumn. It's still ugly." %}
+{% include img-125.html src="exotracker_narrow_subcolumn_background.png" alt="The background color is confined to the width filled by text and selectable by the cursor. There are gray stripes around each subcolumn. It's still ugly." %}
 
 Get rid of the dividers too?
 
-{% include img-srcset.html src="no_dividers.png" alt="Now the subcolumn dividers are gone, replaced by gray stripes. It looks weird to have middle gaps wider than side gaps." %}
+{% include img-125.html src="no_dividers.png" alt="Now the subcolumn dividers are gone, replaced by gray stripes. It looks weird to have middle gaps wider than side gaps." %}
 
 So I can make them the same width... but then either the note lines overlap, or they have gaps, or the widths are inconsistent. This will cause problems with mouse handling as well.
 
-{% include img-srcset.html src="no_dividers_rearranged.png" alt="The gray lines are rearranged, such that the width between subcolumns equals the width between a subcolumn and a channel divider. The note lines overlap." %}
+{% include img-125.html src="no_dividers_rearranged.png" alt="The gray lines are rearranged, such that the width between subcolumns equals the width between a subcolumn and a channel divider. The note lines overlap." %}
 
 ## A solution?
 
