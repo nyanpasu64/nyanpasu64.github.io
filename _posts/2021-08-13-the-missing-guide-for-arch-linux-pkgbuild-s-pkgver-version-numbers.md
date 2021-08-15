@@ -120,11 +120,13 @@ Yes, ".1" < ".2".
 
 Yes, "" < ".alpha"
 
-# What is PKGBUILD and pkgver?
+# What is PKGBUILD and `pkgver`?
 
-PKGBUILD files are shell scripts which define how to build a binary package. They contain a pkgver variable (if the PKGBUILD is specific to a version) or function (if the PKGBUILD fetches the latest commit of a VCS repo) serving as the version number of the PKGBUILD and the package produced. If pkgver is a function, the version of the package may change when the PKGBUILD is rerun and clones/pulls the target's VCS repo to a new commit.
+PKGBUILD files are shell scripts defining variables and functions used by `makepkg` to build a binary package. The `pkgver` variable serves as the version number of the PKGBUILD and the package produced. All PKGBUILD files contain a `pkgver` variable, storing the package's version at the time the file was written. However, this is insufficient for VCS/`-git` packages tracking the latest commit in a Git repository, where the version of software built by a PKGBUILD can change even when the PKGBUILD does not. To accommodate this, `makepkg` also supports a `pkgver()` function, which when run produces the *current* version of the package.
 
-If pkgver is a variable, then an unmodified pkgver means the package has not been updated. But if it's a function, in order for an AUR helper to determine if the installed package is outdated, it must re-clone/pull the VCS repo listed in source=() and call pkgver() again.
+If `pkgver` is a variable only, then an unmodified PKGBUILD and `pkgver` means the package has not been updated. But if a `pkgver()` function is present, then an AUR helper trying to determine if an installed package is outdated must re-clone/pull the VCS repo listed in `source=(...)` and call `pkgver()` again, even if the PKGBUILD and `pkgver` are unmodified.
+
+If a `pkgver()` function is present, then running `makepkg` to build the PKGBUILD into a binary package also rewrites the PKGBUILD file with a *new* value for the `pkgver` variable. A few fixed-version packages like [qt5-base](https://github.com/archlinux/svntogit-packages/blob/master/qt5-base/trunk/PKGBUILD) and [qt5-wayland](https://github.com/archlinux/svntogit-packages/blob/master/qt5-wayland/trunk/PKGBUILD) use this property by defining a `pkgver()` function to automatically recompute complex version numbers. Unlike `-git` packages in the AUR, these PKGBUILDs build a fixed version of the source code, and their `pkgver()` functions return a fixed value.
 
 # Building a `pkgver()` so Pacman sorts Git repositories correctly
 
