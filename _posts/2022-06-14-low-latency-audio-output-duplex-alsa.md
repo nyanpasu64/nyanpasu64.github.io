@@ -10,9 +10,9 @@ Audio output and duplex is actually quite tricky, and even libraries like RtAudi
 
 There are some previous resources on implementing ALSA duplex, but I find them to be unclear and/or incomplete:
 
-- https://git.alsa-project.org/?p=alsa-lib.git;a=blob;f=test/latency.c; gets the "write silence" part right but doesn't explain what it's doing, and the main loop is confusing.
-- https://web.archive.org/web/20211003144458/http://www.saunalahti.fi/~s7l/blog/2005/08/21/Full%20Duplex%20ALSA gets the "write silence" part right, but doesn't know *why* it's necessary.
-- http://equalarea.com/paul/alsa-audio.html#duplexex says: "The the interrupt-driven example represents a fundamentally better design for many situations. It is, however, rather complex to extend to full duplex. This is why I suggest you forget about all of this... In a word: JACK." However this doesn't answer the question of how _JACK_ itself implements full duplex audio.
+- <https://git.alsa-project.org/?p=alsa-lib.git;a=blob;f=test/latency.c>; gets the "write silence" part right but doesn't explain what it's doing, and the main loop is confusing.
+- <https://web.archive.org/web/20211003144458/http://www.saunalahti.fi/~s7l/blog/2005/08/21/Full%20Duplex%20ALSA> gets the "write silence" part right, but doesn't know *why* it's necessary.
+- <http://equalarea.com/paul/alsa-audio.html#duplexex> says: "The the interrupt-driven example represents a fundamentally better design for many situations. It is, however, rather complex to extend to full duplex. This is why I suggest you forget about all of this... In a word: JACK." However this doesn't answer the question of how _JACK_ itself implements full duplex audio.
 
 ## ALSA terminology
 
@@ -29,7 +29,7 @@ However you can read and write arbitrary chunks of audio anyway, and query the e
 - PipeWire (timer-based scheduling) experiences extra latency with batch devices ([link](https://gitlab.freedesktop.org/pipewire/pipewire/-/wikis/FAQ#pipewire-buffering-explained)), and PulseAudio used to turn off timer-based scheduling for batch devices ([link](https://www.alsa-project.org/pipermail/alsa-devel/2014-March/073816.html)).
 - On the other hand, Paul Davis says conventional *period-based* scheduling struggles *more* than timer-based (PulseAudio, PipeWire) for batch devices ([link](https://blog.linuxplumbersconf.org/2009/slides/Paul-Davis-lpc2009.pdf) @ "The Importance of Timing"). I'm not sure how to reconcile this.
 
-**Batch device:** Represented by `SNDRV_PCM_INFO_BATCH` in the Linux kernel. I'm not exactly sure what it means. https://www.alsa-project.org/pipermail/alsa-devel/2014-March/073816.html says it's a device where audio can only be sent to the device in period-sized chunks. https://www.alsa-project.org/pipermail/alsa-devel/2015-June/094037.html is too complicated for me to understand.
+**Batch device:** Represented by `SNDRV_PCM_INFO_BATCH` in the Linux kernel. I'm not exactly sure what it means. <https://www.alsa-project.org/pipermail/alsa-devel/2014-March/073816.html> says it's a device where audio can only be sent to the device in period-sized chunks. <https://www.alsa-project.org/pipermail/alsa-devel/2015-June/094037.html> is too complicated for me to understand.
 
 **Quantum:** PipeWire's app-facing equivalent to ALSA/JACK periods.
 
@@ -39,7 +39,7 @@ However you can read and write arbitrary chunks of audio anyway, and query the e
 
 **"Buffered" frames:** For input devices, this matches available (readable) frames. For output devices, this equals the buffer size minus available (writable) frames.
 
-**hw devices, plugins, etc:** See https://www.volkerschatz.com/noise/alsa.html.
+**hw devices, plugins, etc:** See <https://www.volkerschatz.com/noise/alsa.html>.
 
 ## Minimum achievable input/output/duplex latency
 
@@ -83,7 +83,7 @@ Most apps use shared-mode streams, since exclusive-mode streams take up an entir
 
 If an app needs a output-only or duplex shared-mode stream, and must avoid unnecessary output latency, it should not buffer output audio itself (or generate audio *before* performing a blocking write, discussed above). Instead it should wait for the daemon to request output audio (and optionally provide input audio), *then* generate output audio and send it to the daemon. This minimizes output latency, and in the case of duplex streams, enables *zero-latency* app chaining between apps in an audio graph! To achieve this, the pull-mode mixing daemon (for example JACK2 or PipeWire) requests audio from the first app, and synchronously passes it to later apps within the *same period* of real-world time. Sending audio through two apps in series has zero added latency compared to sending audio through one app. The downside is that if you chain too many apps, JACK2 can't finish ticking all the apps in a single period, and fails to output audio to the speakers in time, resulting in an audio glitch or xrun.
 
-**Issue:** Any ALSA app talking to pulseaudio-alsa or pipewire-alsa (and possibly any PulseAudio app talking to pipewire-pulse) will perform extra buffering. Hopefully RtAudio, PortAudio, etc. will all add PipeWire backends someday (SDL2 already has it: https://www.phoronix.com/scan.php?page=news_item&px=SDL2-Lands-PipeWire-Audio).
+**Issue:** Any ALSA app talking to pulseaudio-alsa or pipewire-alsa (and possibly any PulseAudio app talking to pipewire-pulse) will perform extra buffering. Hopefully RtAudio, PortAudio, etc. will all add PipeWire backends someday (SDL2 already has it: <https://www.phoronix.com/scan.php?page=news_item&px=SDL2-Lands-PipeWire-Audio>).
 
 As a result, for the remainder of the article, I will be focusing on using ALSA to talk to *hardware* devices.
 
@@ -199,6 +199,6 @@ Is it possible to achieve low-latency *output-only* ALSA, perhaps by waiting unt
 
 I hear push-mode mixing daemons like PulseAudio (or possibly WASAPI) are fundamentally bad designs, incompatible with low-latency or consistent-latency audio output.
 
-https://superpowered.com/androidaudiopathlatency ([discussion](https://news.ycombinator.com/item?id=9386994)) is an horror story. In fact I read elsewhere that pre-AAudio Android duplex loopback latency is *different* on every run; I can no longer recall the source, but it's entirely consistent with the user application's own ring buffering, or if input and output streams were started separately and not started and run in sync at a driver level like `snd_pcm_link`.
+<https://superpowered.com/androidaudiopathlatency> ([discussion](https://news.ycombinator.com/item?id=9386994)) is an horror story. In fact I read elsewhere that pre-AAudio Android duplex loopback latency is *different* on every run; I can no longer recall the source, but it's entirely consistent with the user application's own ring buffering, or if input and output streams were started separately and not started and run in sync at a driver level like `snd_pcm_link`.
 
-Note that Android audio may have improved since then, see AAudio and https://android-developers.googleblog.com/2021/03/an-update-on-androids-audio-latency.html.
+Note that Android audio may have improved since then, see AAudio and <https://android-developers.googleblog.com/2021/03/an-update-on-androids-audio-latency.html>.
