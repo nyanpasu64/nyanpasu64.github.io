@@ -55,6 +55,8 @@ For playback and duplex streams, there are `N-1` to `N` periods of playback (key
 
 These values only include delay caused by audio buffers, and exclude extra latency in the input stack, display stack, sound drivers, resamplers, or ADC/DAC.
 
+Note that this article doesn't cover the advantages of extra buffering, like smoothing over hitches, or JACK2 async mode ensuring that an app that stalls won't cause the system audio and all apps to xrun. I have not studied JACK2 async mode though.
+
 ## Avoid blocking writes (both exclusive and shared, output only)
 
 If your app generates one output period of audio at a time and you want to minimize keypress-to-audio latency, regardless if your app outputs to hardware devices or pull-mode daemons, it should never rely on blocking writes to act as output backpressure. Instead it should wait until 1 period of audio is writable, *then* generate 1 period of audio and nonblocking-write it. (This does not apply to duplex apps, since waiting for available _input_ data effectively acts as *output* throttling.)
@@ -109,6 +111,8 @@ Then loop:
 JACK2's ALSA backend, and this guide, assume the input and output device in a duplex pair share the same underlying sample clock and never go out of sync. Calling `snd_pcm_link()` on two streams is supposed to succeed if and only if they share the same sample clock, buffer size and period count, etc. (the exact criteria are undocumented, and I didn't read the kernel source yet). If it succeeds, it not only starts and stops the streams together, but is supposed to synchronize the input's write pointer and the output's read pointer.
 
 PipeWire supports rate-matching resampling ([link](https://gitlab.freedesktop.org/pipewire/pipewire/-/wikis/FAQ#how-are-multiple-devices-handled)), but (like timer-based scheduling) it introduces a great deal of complexity (*heuristic* clock skew estimation, resampling latency compensation), which I have not studied, is out of scope for opening a simple duplex stream, and *actively detracts* from learning the fundamentals.
+
+Note that `unused_buffer_size > 0` is also incidental complexity, and not essential to understanding the concepts. Normally `buffer_size = N periods`.
 
 On ALSA, you can implement full duplex period-based audio by:
 
