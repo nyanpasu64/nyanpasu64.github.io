@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.8.0 -->
+<title>An unsafe tour of Rust’s Send and Sync | nyanpasu64’s blog [OLD]</title>
+<meta name="generator" content="Jekyll v3.9.2" />
+<meta property="og:title" content="An unsafe tour of Rust’s Send and Sync" />
+<meta name="author" content="nyanpasu64" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="Rust’s concurrency safety is based around the Send and Sync traits. For people writing safe code, you don’t really need to understand these traits on a deep level, only enough to satisfy the compiler when it spits errors at you (or switch from std threads to Crossbeam scoped threads to make errors go away). However if you’re writing unsafe concurrent code, such as having a &amp;UnsafeCell&lt;T&gt; hand out &amp;T and &amp;mut T, you need to understand Send and Sync at a more fundamental level, to pick the appropriate trait bounds when writing unsafe impl Send/Sync statements, or add the appropriate PhantomData&lt;T&gt; to your types." />
+<meta property="og:description" content="Rust’s concurrency safety is based around the Send and Sync traits. For people writing safe code, you don’t really need to understand these traits on a deep level, only enough to satisfy the compiler when it spits errors at you (or switch from std threads to Crossbeam scoped threads to make errors go away). However if you’re writing unsafe concurrent code, such as having a &amp;UnsafeCell&lt;T&gt; hand out &amp;T and &amp;mut T, you need to understand Send and Sync at a more fundamental level, to pick the appropriate trait bounds when writing unsafe impl Send/Sync statements, or add the appropriate PhantomData&lt;T&gt; to your types." />
+<link rel="canonical" href="https://nyanpasu64.gitlab.io/blog/an-unsafe-tour-of-rust-s-send-and-sync/" />
+<meta property="og:url" content="https://nyanpasu64.gitlab.io/blog/an-unsafe-tour-of-rust-s-send-and-sync/" />
+<meta property="og:site_name" content="nyanpasu64’s blog [OLD]" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2021-01-01T06:54:00-08:00" />
+<meta name="twitter:card" content="summary" />
+<meta property="twitter:title" content="An unsafe tour of Rust’s Send and Sync" />
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"nyanpasu64"},"dateModified":"2021-01-01T06:54:00-08:00","datePublished":"2021-01-01T06:54:00-08:00","description":"Rust’s concurrency safety is based around the Send and Sync traits. For people writing safe code, you don’t really need to understand these traits on a deep level, only enough to satisfy the compiler when it spits errors at you (or switch from std threads to Crossbeam scoped threads to make errors go away). However if you’re writing unsafe concurrent code, such as having a &amp;UnsafeCell&lt;T&gt; hand out &amp;T and &amp;mut T, you need to understand Send and Sync at a more fundamental level, to pick the appropriate trait bounds when writing unsafe impl Send/Sync statements, or add the appropriate PhantomData&lt;T&gt; to your types.","headline":"An unsafe tour of Rust’s Send and Sync","mainEntityOfPage":{"@type":"WebPage","@id":"https://nyanpasu64.github.io/blog/an-unsafe-tour-of-rust-s-send-and-sync/"},"url":"https://nyanpasu64.github.io/blog/an-unsafe-tour-of-rust-s-send-and-sync/"}</script>
+<!-- End Jekyll SEO tag -->
+<link rel="stylesheet" href="/assets/main.css"><link type="application/atom+xml" rel="alternate" href="https://nyanpasu64.github.io/feed.xml" title="nyanpasu64's blog [OLD]" /></head>
+<body><header class="site-header" role="banner">
+
+  <div class="wrapper"><a class="site-title" rel="author" href="/">nyanpasu64&#39;s blog [OLD]</a><nav class="site-nav">
+        <input type="checkbox" id="nav-trigger" class="nav-trigger" />
+        <label for="nav-trigger">
+          <span class="menu-icon">
+            <svg viewBox="0 0 18 15" width="18px" height="15px">
+              <path d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.032C17.335,0,18,0.665,18,1.484L18,1.484z M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.032C17.335,6.031,18,6.696,18,7.516L18,7.516z M18,13.516C18,14.335,17.335,15,16.516,15H1.484 C0.665,15,0,14.335,0,13.516l0,0c0-0.82,0.665-1.483,1.484-1.483h15.032C17.335,12.031,18,12.695,18,13.516L18,13.516z"/>
+            </svg>
+          </span>
+        </label>
+
+        <div class="trigger">
+          <a class="page-link" href="https://nyanpasu64.gitlab.io/blog/an-unsafe-tour-of-rust-s-send-and-sync/">New site</a>
+        </div>
+      </nav></div>
+</header>
+<main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+
+  <header class="post-header">
+    <h1 class="post-title p-name" itemprop="name headline">An unsafe tour of Rust&#39;s Send and Sync</h1>
+    <p class="post-meta">
+      <time class="dt-published" datetime="2021-01-01T06:54:00-08:00" itemprop="datePublished">Jan 1, 2021
+      </time></p>
+      <a class="page-link" href="https://nyanpasu64.gitlab.io/blog/an-unsafe-tour-of-rust-s-send-and-sync/">This site has moved!</a>
+  </header>
+
+  <div class="post-content e-content" itemprop="articleBody">
+    <p>Rust’s concurrency safety is based around the <code class="language-plaintext highlighter-rouge">Send</code> and <code class="language-plaintext highlighter-rouge">Sync</code> traits. For people writing safe code, you don’t really need to understand these traits on a deep level, only enough to satisfy the compiler when it spits errors at you (or switch from <code class="language-plaintext highlighter-rouge">std</code> threads to Crossbeam scoped threads to make errors go away). However if you’re writing unsafe concurrent code, such as having a <code class="language-plaintext highlighter-rouge">&amp;UnsafeCell&lt;T&gt;</code> hand out <code class="language-plaintext highlighter-rouge">&amp;T</code> and <code class="language-plaintext highlighter-rouge">&amp;mut T</code>, you need to understand <code class="language-plaintext highlighter-rouge">Send</code> and <code class="language-plaintext highlighter-rouge">Sync</code> at a more fundamental level, to pick the appropriate trait bounds when writing <code class="language-plaintext highlighter-rouge">unsafe impl Send/Sync</code> statements, or add the appropriate <code class="language-plaintext highlighter-rouge">PhantomData&lt;T&gt;</code> to your types.</p>
+
+<p>In this article, I will explore the precise behavior of <code class="language-plaintext highlighter-rouge">Send</code> and <code class="language-plaintext highlighter-rouge">Sync</code>, and explain <em>why</em> the standard library’s trait bounds are the way they are.</p>
+
+<h2 id="prior-art">Prior art</h2>
+
+<blockquote>
+  <p>You can think of Send as “Exclusive access is thread-safe,” and Sync as “Shared access is thread-safe.”</p>
+
+  <p><a href="https://www.reddit.com/r/rust/comments/9elom2/why_does_implt_send_for_mut_t_require_t_send/">[Source]</a></p>
+</blockquote>
+
+<p>I recommended first reading <a href="https://limpet.net/mbrubeck/2019/02/07/rust-a-unique-perspective.html">“Rust: A unique perspective”</a>. This article gives a conceptual overview of the mechanics (unique and shared references) I will analyze in more depth.</p>
+
+<h2 id="defining-sync-and-send">Defining Sync and Send</h2>
+
+<p><code class="language-plaintext highlighter-rouge">T: Send</code> means <code class="language-plaintext highlighter-rouge">T</code> and <code class="language-plaintext highlighter-rouge">&amp;mut T</code> (which allow dropping <code class="language-plaintext highlighter-rouge">T</code>) can be passed between threads. <code class="language-plaintext highlighter-rouge">T: Sync</code> means <code class="language-plaintext highlighter-rouge">&amp;T</code> (which allows shared/aliased access to <code class="language-plaintext highlighter-rouge">T</code>) can be passed between threads. Either or both may be true for any given type. <code class="language-plaintext highlighter-rouge">T: Sync</code> ≡ <code class="language-plaintext highlighter-rouge">&amp;T: Send</code> (by definition).</p>
+
+<p>One way that <code class="language-plaintext highlighter-rouge">T: !Sync</code> can occur is <strong>if a type has non-atomic interior mutability</strong>. This means that every <code class="language-plaintext highlighter-rouge">&amp;T</code> (there can be more than one) can mutate <code class="language-plaintext highlighter-rouge">T</code> at the same time non-atomically, causing data races if a <code class="language-plaintext highlighter-rouge">&amp;T</code> is sent to another thread. <code class="language-plaintext highlighter-rouge">T: !Sync</code> includes <code class="language-plaintext highlighter-rouge">Cell&lt;V&gt;</code> and <code class="language-plaintext highlighter-rouge">RefCell&lt;V&gt;</code>, as well as <code class="language-plaintext highlighter-rouge">Rc&lt;V&gt;</code> (which acts like <code class="language-plaintext highlighter-rouge">&amp;(Cell&lt;RefCount&gt;, V)</code>).</p>
+
+<p><code class="language-plaintext highlighter-rouge">T: !Send</code> <strong>if a type is bound to the current thread</strong>. Examples:</p>
+
+<ul>
+  <li><code class="language-plaintext highlighter-rouge">MutexGuard</code>, where the “unlock” syscall must occur on the same thread as “lock”.</li>
+  <li><code class="language-plaintext highlighter-rouge">&amp;V</code> where <code class="language-plaintext highlighter-rouge">V</code> can be modified non-atomically (only safe from a single thread) through multiple <code class="language-plaintext highlighter-rouge">&amp;V</code> (explained above).</li>
+</ul>
+
+<h2 id="primitives">Primitives</h2>
+
+<p>Most primitive types (like <code class="language-plaintext highlighter-rouge">i32</code>) are <code class="language-plaintext highlighter-rouge">Send+Sync</code>. They can be read through shared references (<code class="language-plaintext highlighter-rouge">&amp;</code>) by multiple threads at once (<code class="language-plaintext highlighter-rouge">Sync</code>), and modified through unique references (<code class="language-plaintext highlighter-rouge">&amp;mut</code>) by any one thread at a time (<code class="language-plaintext highlighter-rouge">Send</code>).</p>
+
+<h2 id="owning-references">Owning references</h2>
+
+<p><code class="language-plaintext highlighter-rouge">Box&lt;T&gt;</code> and <code class="language-plaintext highlighter-rouge">&amp;mut T</code> give the same access as having a <code class="language-plaintext highlighter-rouge">T</code> directly, so it shares the same Sync/Send status as <code class="language-plaintext highlighter-rouge">T</code>.</p>
+
+<p>(Sidenote) Technically, <code class="language-plaintext highlighter-rouge">&amp;mut T</code> allows swapping the <code class="language-plaintext highlighter-rouge">T</code> (which cannot panic), but prohibits moving the <code class="language-plaintext highlighter-rouge">T</code>. This is because moving invalidates the <code class="language-plaintext highlighter-rouge">&amp;mut T</code>, and the <code class="language-plaintext highlighter-rouge">&amp;mut T</code>s and <code class="language-plaintext highlighter-rouge">T</code> it’s constructed from.</p>
+
+<p>For a demonstration of <code class="language-plaintext highlighter-rouge">&amp;mut T</code>, see <a href="#example-passing-mut-t-send-between-threads">“Example: Passing <code class="language-plaintext highlighter-rouge">&amp;mut (T: Send)</code> between threads”</a> section in this page.</p>
+
+<h3 id="where-these-semantics-are-defined">Where these semantics are defined</h3>
+
+<ul>
+  <li><a href="https://doc.rust-lang.org/std/primitive.reference.html#impl-Send-1"><code class="language-plaintext highlighter-rouge">impl Send for &amp;mut T where T: Send</code></a></li>
+  <li><code class="language-plaintext highlighter-rouge">impl Sync for &amp;mut T where T: Sync</code> is not on the page…</li>
+  <li><a href="https://doc.rust-lang.org/std/boxed/struct.Box.html#impl-Send"><code class="language-plaintext highlighter-rouge">impl Send for Box&lt;T&gt; where T: Send</code></a></li>
+  <li><a href="https://doc.rust-lang.org/std/boxed/struct.Box.html#impl-Sync"><code class="language-plaintext highlighter-rouge">impl Sync for Box&lt;T&gt; where T: Sync</code></a></li>
+</ul>
+
+<h2 id="shared-references">Shared references</h2>
+
+<p>Unlike owning references, many <code class="language-plaintext highlighter-rouge">&amp;T</code> can be created from the same <code class="language-plaintext highlighter-rouge">T</code>. And an unlimited number of <code class="language-plaintext highlighter-rouge">&amp;T</code> and <code class="language-plaintext highlighter-rouge">Rc&lt;T&gt;</code> and <code class="language-plaintext highlighter-rouge">Arc&lt;T&gt;</code> copies/clones can point to the same <code class="language-plaintext highlighter-rouge">T</code>.</p>
+
+<p>By definition, you can <code class="language-plaintext highlighter-rouge">Send</code> <code class="language-plaintext highlighter-rouge">&amp;T</code> instances to other threads iff <code class="language-plaintext highlighter-rouge">T</code> is <code class="language-plaintext highlighter-rouge">Sync</code>. For example, <code class="language-plaintext highlighter-rouge">&amp;i32</code> is <code class="language-plaintext highlighter-rouge">Send</code> because <code class="language-plaintext highlighter-rouge">i32</code> is <code class="language-plaintext highlighter-rouge">Sync</code>.</p>
+
+<p>Less obvious is that <code class="language-plaintext highlighter-rouge">&amp;T: Sync</code> requires that <code class="language-plaintext highlighter-rouge">T: Sync</code>. Why is this the case?</p>
+
+<ul>
+  <li>Why must <code class="language-plaintext highlighter-rouge">T</code> be <code class="language-plaintext highlighter-rouge">Sync</code>? We want <code class="language-plaintext highlighter-rouge">&amp;T: Sync</code>. This means <code class="language-plaintext highlighter-rouge">&amp;&amp;T</code> (which is clonable/copyable) is <code class="language-plaintext highlighter-rouge">Send</code>, allowing multiple threads to concurrently obtain <code class="language-plaintext highlighter-rouge">&amp;&amp;T</code> and <code class="language-plaintext highlighter-rouge">&amp;T</code>, which is only legal if <code class="language-plaintext highlighter-rouge">T: Sync</code>.</li>
+  <li>Why is <code class="language-plaintext highlighter-rouge">&amp;&amp;T: Send</code> legal? Because <code class="language-plaintext highlighter-rouge">&amp;T</code> lacks interior mutability (a <code class="language-plaintext highlighter-rouge">&amp;&amp;T</code> can’t modify the <code class="language-plaintext highlighter-rouge">&amp;T</code> to point to a different <code class="language-plaintext highlighter-rouge">T</code>).</li>
+</ul>
+
+<h3 id="sources">Sources</h3>
+
+<ul>
+  <li><a href="https://doc.rust-lang.org/std/primitive.reference.html#impl-Send"><code class="language-plaintext highlighter-rouge">impl Send for &amp;T where T: Sync</code></a></li>
+  <li><code class="language-plaintext highlighter-rouge">impl Sync for &amp;T where T: Sync</code> is not on the page…
+    <ul>
+      <li>For a demonstration, see the <a href="#example-t-send-or-sync-both-depend-on-t-sync">“Example: <code class="language-plaintext highlighter-rouge">&amp;T: Send or Sync</code> both depend on <code class="language-plaintext highlighter-rouge">T: Sync</code>”</a> section in this page.</li>
+    </ul>
+  </li>
+</ul>
+
+<h2 id="interior-mutability">Interior mutability</h2>
+
+<p><code class="language-plaintext highlighter-rouge">Cell&lt;i32&gt;</code> (and <code class="language-plaintext highlighter-rouge">RefCell&lt;i32&gt;</code>) is <code class="language-plaintext highlighter-rouge">!Sync</code> because it has single-threaded <strong>interior mutability</strong>, which translates to multithreaded <strong>data races</strong>.</p>
+
+<p><code class="language-plaintext highlighter-rouge">UnsafeCell&lt;i32&gt;</code> is <code class="language-plaintext highlighter-rouge">!Sync</code> to prevent misuse, since only some usages are <code class="language-plaintext highlighter-rouge">Sync</code> and <code class="language-plaintext highlighter-rouge">impl !Sync</code> is unstable. As a result, you need to <code class="language-plaintext highlighter-rouge">unsafe impl Sync</code> (which shows up in grep) if you want concurrent access.</p>
+
+<h2 id="smart-pointers-rct">Smart pointers: <code class="language-plaintext highlighter-rouge">Rc&lt;T&gt;</code></h2>
+
+<p><code class="language-plaintext highlighter-rouge">Rc&lt;i32&gt;</code> acts like <code class="language-plaintext highlighter-rouge">&amp;(Cell&lt;RefCount&gt;, i32)</code>. It is <code class="language-plaintext highlighter-rouge">!Sync</code> because <code class="language-plaintext highlighter-rouge">Cell&lt;RefCount&gt;</code> has <strong>interior mutability</strong> and <strong>data races</strong> on <code class="language-plaintext highlighter-rouge">RefCount</code>, and <code class="language-plaintext highlighter-rouge">!Send</code> because <code class="language-plaintext highlighter-rouge">Rc&lt;T&gt;</code> is clonable, acts like a<code class="language-plaintext highlighter-rouge">&amp;Cell&lt;RefCount&gt;</code>, and <code class="language-plaintext highlighter-rouge">Cell&lt;RefCount&gt;</code> is <code class="language-plaintext highlighter-rouge">!Sync</code>.</p>
+
+<p>(Technically <code class="language-plaintext highlighter-rouge">Rc&lt;i32&gt;</code> also acts like <code class="language-plaintext highlighter-rouge">&amp;mut T</code> in its ability to drop <code class="language-plaintext highlighter-rouge">T</code>, but it doesn’t matter because it’s always <code class="language-plaintext highlighter-rouge">!Send</code> and <code class="language-plaintext highlighter-rouge">!Sync</code>.)</p>
+
+<h3 id="sources-1">Sources</h3>
+
+<ul>
+  <li><a href="https://doc.rust-lang.org/std/rc/struct.Rc.html#impl-Send"><code class="language-plaintext highlighter-rouge">impl&lt;T&gt; !Send for Rc&lt;T&gt;</code></a></li>
+  <li><a href="https://doc.rust-lang.org/std/rc/struct.Rc.html#impl-Sync"><code class="language-plaintext highlighter-rouge">impl&lt;T&gt; !Sync for Rc&lt;T&gt;</code></a></li>
+</ul>
+
+<h2 id="smart-pointers-arct-atomic-refcounting">Smart pointers: <code class="language-plaintext highlighter-rouge">Arc&lt;T&gt;</code> (atomic refcounting)</h2>
+
+<p><code class="language-plaintext highlighter-rouge">Arc&lt;T&gt;</code> is a doozy. It acts like <code class="language-plaintext highlighter-rouge">&amp;(Atomic&lt;RefCount&gt;, T)</code> in its ability to alias <code class="language-plaintext highlighter-rouge">T</code>, and <code class="language-plaintext highlighter-rouge">T</code>/<code class="language-plaintext highlighter-rouge">&amp;mut T</code> in its ability to drop or <code class="language-plaintext highlighter-rouge">get_mut</code> or <code class="language-plaintext highlighter-rouge">try_unwrap</code> the <code class="language-plaintext highlighter-rouge">T</code>.</p>
+
+<p>Because <code class="language-plaintext highlighter-rouge">&amp;T</code> can alias, <code class="language-plaintext highlighter-rouge">Arc&lt;T&gt;: Send+Sync</code> requires <code class="language-plaintext highlighter-rouge">T: Sync</code>.</p>
+
+<p>Additionally, <code class="language-plaintext highlighter-rouge">Arc&lt;T&gt;: Send</code> requires <code class="language-plaintext highlighter-rouge">T: Send</code> (because you can move <code class="language-plaintext highlighter-rouge">Arc&lt;T&gt;</code> across threads, and <code class="language-plaintext highlighter-rouge">T</code> with it).</p>
+
+<p>And <code class="language-plaintext highlighter-rouge">Arc&lt;T&gt;: Sync</code> requires <code class="language-plaintext highlighter-rouge">T: Send</code>, because if <code class="language-plaintext highlighter-rouge">T: !Send</code> but <code class="language-plaintext highlighter-rouge">Arc&lt;T&gt;: Sync</code>, you could clone the Arc (via <code class="language-plaintext highlighter-rouge">&amp;Arc&lt;T&gt;</code>) from another thread, and drop (or <code class="language-plaintext highlighter-rouge">get_mut</code> or <code class="language-plaintext highlighter-rouge">try_unwrap</code>) the clone last, violating <code class="language-plaintext highlighter-rouge">T: !Send</code>.</p>
+
+<p>(<code class="language-plaintext highlighter-rouge">Atomic&lt;RefCount&gt;</code> is <code class="language-plaintext highlighter-rouge">Send+Sync</code> and does not contribute to <code class="language-plaintext highlighter-rouge">Arc</code>’s thread safety.)</p>
+
+<h3 id="sources-2">Sources</h3>
+
+<ul>
+  <li><a href="https://doc.rust-lang.org/std/sync/struct.Arc.html#impl-Send"><code class="language-plaintext highlighter-rouge">impl&lt;T&gt; Send for Arc&lt;T&gt; where T: Send + Sync</code></a></li>
+  <li><a href="https://doc.rust-lang.org/std/sync/struct.Arc.html#impl-Sync"><code class="language-plaintext highlighter-rouge">impl&lt;T&gt; Sync for Arc&lt;T&gt; where T: Send + Sync</code></a></li>
+</ul>
+
+<p>This was also discussed in a <a href="https://stackoverflow.com/questions/41909811/why-does-arct-require-t-to-be-both-send-and-sync-in-order-to-be-send">Stack Overflow question</a>.</p>
+
+<h2 id="mutexes">Mutexes</h2>
+
+<p><code class="language-plaintext highlighter-rouge">Mutex&lt;T&gt;</code> is <code class="language-plaintext highlighter-rouge">Sync</code> even if <code class="language-plaintext highlighter-rouge">T</code> isn’t, because if multiple threads obtain <code class="language-plaintext highlighter-rouge">&amp;Mutex&lt;T&gt;</code>, they can’t all obtain <code class="language-plaintext highlighter-rouge">&amp;T</code>.</p>
+
+<p><code class="language-plaintext highlighter-rouge">Mutex&lt;T&gt;: Sync</code> requires <code class="language-plaintext highlighter-rouge">T: Send</code>. We want <code class="language-plaintext highlighter-rouge">&amp;Mutex</code> to be <code class="language-plaintext highlighter-rouge">Send</code>, meaning multiple threads can lock the mutex and obtain a <code class="language-plaintext highlighter-rouge">&amp;mut T</code> (which lets you swap <code class="language-plaintext highlighter-rouge">T</code> and control which thread calls <code class="language-plaintext highlighter-rouge">Drop</code>). To hand-wave, exclusive access to <code class="language-plaintext highlighter-rouge">T</code> gets passed between threads, requiring that <code class="language-plaintext highlighter-rouge">T: Send</code>.</p>
+
+<p><code class="language-plaintext highlighter-rouge">Mutex&lt;T&gt;: Send</code> requires <code class="language-plaintext highlighter-rouge">T: Send</code> because <code class="language-plaintext highlighter-rouge">Mutex</code> is a value type.</p>
+
+<p><code class="language-plaintext highlighter-rouge">MutexGuard&lt;T&gt;</code> is <code class="language-plaintext highlighter-rouge">!Send</code> because it’s <strong>bound to the constructing thread</strong> (on some OSes including Windows, you can’t send or exchange “responsibility for freeing a mutex” to another thread). Otherwise it acts like a <code class="language-plaintext highlighter-rouge">&amp;mut T</code>, which is <code class="language-plaintext highlighter-rouge">Sync</code> if T is <code class="language-plaintext highlighter-rouge">Sync</code>. Additionally you can extract a <code class="language-plaintext highlighter-rouge">&amp;mut T</code> (which is <code class="language-plaintext highlighter-rouge">Send</code>) using <code class="language-plaintext highlighter-rouge">&amp;mut *guard</code>.</p>
+
+<h3 id="sources-3">Sources</h3>
+
+<ul>
+  <li><a href="https://doc.rust-lang.org/std/sync/struct.Mutex.html#impl-Send"><code class="language-plaintext highlighter-rouge">Mutex</code> traits</a></li>
+  <li><a href="https://doc.rust-lang.org/std/sync/struct.MutexGuard.html#impl-Send"><code class="language-plaintext highlighter-rouge">MutexGuard</code> traits</a></li>
+</ul>
+
+<h3 id="contrived-corner-cases">Contrived corner cases</h3>
+
+<p><code class="language-plaintext highlighter-rouge">Mutex&lt;MutexGuard&lt;i32&gt;&gt;</code> is <code class="language-plaintext highlighter-rouge">!Sync</code> because <code class="language-plaintext highlighter-rouge">MutexGuard&lt;i32&gt;</code> is <code class="language-plaintext highlighter-rouge">!Send</code>.</p>
+
+<h2 id="thoughts-on-trait-bounds-and-flexibility-for-users">Thoughts on trait bounds and flexibility for users</h2>
+
+<p>Why does <code class="language-plaintext highlighter-rouge">Arc&lt;T&gt;</code> not have a <code class="language-plaintext highlighter-rouge">where T: Send + Sync</code> trait bound, but instead allows you to construct <code class="language-plaintext highlighter-rouge">Arc&lt;T&gt;</code> for any <code class="language-plaintext highlighter-rouge">T</code> (but just not send/share it across threads)?</p>
+
+<p>I’ve heard that you should avoid putting trait bounds in types, but (if I remember correctly) instead in method implementations, or (in the case of <code class="language-plaintext highlighter-rouge">Arc</code>) in conditional <code class="language-plaintext highlighter-rouge">Send</code>/<code class="language-plaintext highlighter-rouge">Sync</code> implementations. One person said:</p>
+
+<blockquote>
+  <p>The reason the restrictions are usually on the implementations rather than on the type in general is that you don’t usually know every possible implementation
+If you later realize you can add other functionality, you can just add additional impl blocks with different restrictions, whereas if they were on the type you would potentially have to worry about unifying the restrictions (which can be really awkward) or removing them altogether</p>
+</blockquote>
+
+<p>When asking about this topic, I was pointed to the <a href="https://rust-lang.github.io/api-guidelines/about.html">Rust API guidelines</a>, but I couldn’t find any discussion of this issue.</p>
+
+<hr />
+
+<p>I personally encountered this topic when I used an <code class="language-plaintext highlighter-rouge">Arc</code> internally for <a href="https://github.com/nyanpasu64/spectro2/blob/master/flip-cell/src/lib.rs">the <code class="language-plaintext highlighter-rouge">flip-cell</code> crate</a> (which turns out to be equivalent to <a href="https://github.com/Ralith/oddio/blob/main/src/swap.rs">Oddio’s <code class="language-plaintext highlighter-rouge">Swap</code> type</a> and the <a href="https://github.com/HadrienG2/triple-buffer"><code class="language-plaintext highlighter-rouge">triple-buffer</code> crate</a>).</p>
+
+<p><code class="language-plaintext highlighter-rouge">Arc&lt;T&gt;: Sync</code> is only safe if <code class="language-plaintext highlighter-rouge">T: Send</code>, not just <code class="language-plaintext highlighter-rouge">T: Sync</code>; this is because another thread can look at an <code class="language-plaintext highlighter-rouge">&amp;Arc&lt;T&gt;</code>, clone it, and obtain an <code class="language-plaintext highlighter-rouge">Arc&lt;T&gt;</code> sharing ownership over the same object. But if we create a type <code class="language-plaintext highlighter-rouge">FlipReader&lt;T&gt;</code> (<a href="https://github.com/nyanpasu64/spectro2/blob/05561a21d85fc5fc0e8e92140edf01d6b64401bc/flip-cell/src/lib.rs#L188-L201">source</a>) which contains an <code class="language-plaintext highlighter-rouge">Arc&lt;Wrapper&lt;T&gt;&gt;</code> but prohibits cloning it, then making <code class="language-plaintext highlighter-rouge">FlipReader&lt;T&gt;: Sync</code> does not allow another thread to take shared ownership of <code class="language-plaintext highlighter-rouge">Wrapper&lt;T&gt;</code>, so the <code class="language-plaintext highlighter-rouge">Wrapper&lt;T&gt;: Send</code> trait bound is unnecessary.</p>
+
+<p>Had the struct <code class="language-plaintext highlighter-rouge">Arc&lt;T&gt;</code> required <code class="language-plaintext highlighter-rouge">T: Send + Sync</code> to even be constructed, <code class="language-plaintext highlighter-rouge">Arc</code> would be crippled as a building block for unsafe code.</p>
+
+<h2 id="example-passing-mut-t-send-between-threads">Example: Passing <code class="language-plaintext highlighter-rouge">&amp;mut (T: Send)</code> between threads</h2>
+
+<p>Cell is <code class="language-plaintext highlighter-rouge">Send</code> but not <code class="language-plaintext highlighter-rouge">Sync</code>. Both <code class="language-plaintext highlighter-rouge">Cell</code> and <code class="language-plaintext highlighter-rouge">&amp;mut Cell</code> can be passed between threads. The following code builds as-is, but not if <code class="language-plaintext highlighter-rouge">&amp;mut</code> is changed to <code class="language-plaintext highlighter-rouge">&amp;</code>.</p>
+
+<div class="language-rust highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">use</span> <span class="nn">std</span><span class="p">::</span><span class="n">thread</span><span class="p">;</span>
+<span class="k">use</span> <span class="nn">std</span><span class="p">::</span><span class="nn">cell</span><span class="p">::</span><span class="n">Cell</span><span class="p">;</span>
+
+<span class="k">fn</span> <span class="nf">main</span><span class="p">()</span> <span class="p">{</span>
+    <span class="c">// Send + !Sync</span>
+    <span class="k">let</span> <span class="n">cell_ref</span><span class="p">:</span> <span class="o">&amp;</span><span class="k">mut</span> <span class="n">Cell</span><span class="o">&lt;</span><span class="nb">i32</span><span class="o">&gt;</span> <span class="o">=</span> <span class="nn">Box</span><span class="p">::</span><span class="nf">leak</span><span class="p">(</span><span class="nn">Box</span><span class="p">::</span><span class="nf">new</span><span class="p">(</span><span class="nn">Cell</span><span class="p">::</span><span class="nf">new</span><span class="p">(</span><span class="mi">0</span><span class="p">)));</span>
+
+    <span class="nn">thread</span><span class="p">::</span><span class="nf">spawn</span><span class="p">(</span><span class="k">move</span> <span class="p">||</span> <span class="p">{</span>
+        <span class="n">cell_ref</span><span class="nf">.replace</span><span class="p">(</span><span class="mi">1</span><span class="p">);</span>
+    <span class="p">});</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<h2 id="example-t-send-or-sync-both-depend-on-t-sync">Example: <code class="language-plaintext highlighter-rouge">&amp;T: Send or Sync</code> both depend on <code class="language-plaintext highlighter-rouge">T: Sync</code></h2>
+
+<p>If <code class="language-plaintext highlighter-rouge">T: !Sync</code> (for example <code class="language-plaintext highlighter-rouge">Cell</code>), then <code class="language-plaintext highlighter-rouge">&amp;T</code> is neither <code class="language-plaintext highlighter-rouge">Send</code> nor <code class="language-plaintext highlighter-rouge">Sync</code>.</p>
+
+<div class="language-rust highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">use</span> <span class="nn">std</span><span class="p">::</span><span class="nn">cell</span><span class="p">::</span><span class="n">Cell</span><span class="p">;</span>
+
+<span class="k">fn</span> <span class="n">ensure_sync</span><span class="o">&lt;</span><span class="n">T</span><span class="p">:</span> <span class="n">Sync</span><span class="o">&gt;</span><span class="p">(</span><span class="mi">_</span><span class="p">:</span> <span class="n">T</span><span class="p">)</span> <span class="p">{}</span>
+<span class="k">fn</span> <span class="n">ensure_send</span><span class="o">&lt;</span><span class="n">T</span><span class="p">:</span> <span class="nb">Send</span><span class="o">&gt;</span><span class="p">(</span><span class="mi">_</span><span class="p">:</span> <span class="n">T</span><span class="p">)</span> <span class="p">{}</span>
+
+<span class="k">fn</span> <span class="nf">main</span><span class="p">()</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="n">foo</span> <span class="o">=</span> <span class="nn">Cell</span><span class="p">::</span><span class="nf">new</span><span class="p">(</span><span class="mi">1i32</span><span class="p">);</span>
+    <span class="nf">ensure_sync</span><span class="p">(</span><span class="o">&amp;</span><span class="n">foo</span><span class="p">);</span>
+    <span class="nf">ensure_send</span><span class="p">(</span><span class="o">&amp;</span><span class="n">foo</span><span class="p">);</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>Trying to compile this code returns the errors:</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>Standard Error
+
+   Compiling playground v0.0.1 (/playground)
+error[E0277]: `Cell&lt;i32&gt;` cannot be shared between threads safely
+ --&gt; src/main.rs:8:17
+  |
+3 | fn ensure_sync&lt;T: Sync&gt;(_: T) {}
+  |                   ---- required by this bound in `ensure_sync`
+...
+8 |     ensure_sync(&amp;foo);
+  |                 ^^^^ `Cell&lt;i32&gt;` cannot be shared between threads safely
+  |
+  = help: within `&amp;Cell&lt;i32&gt;`, the trait `Sync` is not implemented for `Cell&lt;i32&gt;`
+  = note: required because it appears within the type `&amp;Cell&lt;i32&gt;`
+
+error[E0277]: `Cell&lt;i32&gt;` cannot be shared between threads safely
+ --&gt; src/main.rs:9:17
+  |
+4 | fn ensure_send&lt;T: Send&gt;(_: T) {}
+  |                   ---- required by this bound in `ensure_send`
+...
+9 |     ensure_send(&amp;foo);
+  |                 ^^^^ `Cell&lt;i32&gt;` cannot be shared between threads safely
+  |
+  = help: the trait `Sync` is not implemented for `Cell&lt;i32&gt;`
+  = note: required because of the requirements on the impl of `Send` for `&amp;Cell&lt;i32&gt;`
+</code></pre></div></div>
+
+<p>If <code class="language-plaintext highlighter-rouge">T: !Send + Sync</code> (for example <code class="language-plaintext highlighter-rouge">MutexGuard</code>), then <code class="language-plaintext highlighter-rouge">&amp;T</code> is still <code class="language-plaintext highlighter-rouge">Send + Sync</code>. (This makes sense, because <code class="language-plaintext highlighter-rouge">T: !Send</code> only constrains the behavior of a <code class="language-plaintext highlighter-rouge">&amp;mut T</code>, and should not affect the properties of a <code class="language-plaintext highlighter-rouge">&amp;T</code>.)</p>
+
+<div class="language-rust highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">use</span> <span class="nn">std</span><span class="p">::</span><span class="nn">marker</span><span class="p">::</span><span class="n">PhantomData</span><span class="p">;</span>
+<span class="k">use</span> <span class="nn">std</span><span class="p">::</span><span class="nn">sync</span><span class="p">::</span><span class="n">MutexGuard</span><span class="p">;</span>
+
+<span class="k">fn</span> <span class="n">ensure_sync</span><span class="o">&lt;</span><span class="n">T</span><span class="p">:</span> <span class="n">Sync</span><span class="o">&gt;</span><span class="p">(</span><span class="mi">_</span><span class="p">:</span> <span class="n">T</span><span class="p">)</span> <span class="p">{}</span>
+<span class="k">fn</span> <span class="n">ensure_send</span><span class="o">&lt;</span><span class="n">T</span><span class="p">:</span> <span class="nb">Send</span><span class="o">&gt;</span><span class="p">(</span><span class="mi">_</span><span class="p">:</span> <span class="n">T</span><span class="p">)</span> <span class="p">{}</span>
+
+<span class="k">fn</span> <span class="nf">main</span><span class="p">()</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="n">foo</span> <span class="o">=</span> <span class="nn">PhantomData</span><span class="p">::</span><span class="o">&lt;</span><span class="n">MutexGuard</span><span class="o">&lt;</span><span class="nb">i32</span><span class="o">&gt;&gt;</span> <span class="p">{};</span>
+    <span class="nf">ensure_sync</span><span class="p">(</span><span class="o">&amp;</span><span class="n">foo</span><span class="p">);</span>
+    <span class="nf">ensure_send</span><span class="p">(</span><span class="o">&amp;</span><span class="n">foo</span><span class="p">);</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p><em>This blog post was edited on 2021-02-09 to fix minor errors and clarify <code class="language-plaintext highlighter-rouge">Rc&lt;V&gt;</code>.</em></p>
+
+  </div>
+
+  <script src="https://utteranc.es/client.js"
+        repo="nyanpasu64/nyanpasu64.github.io"
+        issue-term="pathname"
+        theme="github-light"
+        crossorigin="anonymous"
+        async>
+</script>
+
+
+  <a class="u-url" href="/blog/an-unsafe-tour-of-rust-s-send-and-sync/" hidden></a>
+</article>
+
+      </div>
+    </main><footer class="site-footer h-card">
+  <data class="u-url" href="/"></data>
+
+  <div class="wrapper">
+
+    <!-- <h2 class="footer-heading">nyanpasu64&#39;s blog [OLD]</h2> -->
+
+    <div class="footer-col-wrapper">
+      <div class="footer-col footer-col-1">
+        <ul class="contact-list">
+          <li class="p-name">
+            nyanpasu64&#39;s blog [OLD]
+          </li>
+        </ul>
+      </div>
+
+      <div class="footer-col footer-col-2"><ul class="social-media-list"><li><a href="https://github.com/nyanpasu64"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#github"></use></svg> <span class="username">nyanpasu64</span></a></li><li><a href="https://write.as/nyanpasu64"><span class="username">My microblog</span></a></li>
+</ul>
+</div>
+
+      <div class="footer-col footer-col-3">
+        <p>Adventures in programming, DSP, and chiptune</p>
+      </div>
+    </div>
+
+  </div>
+
+</footer>
+</body>
+
+</html>

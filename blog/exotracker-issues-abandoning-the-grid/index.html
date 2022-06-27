@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.8.0 -->
+<title>ExoTracker Issues - Abandoning the grid | nyanpasu64’s blog [OLD]</title>
+<meta name="generator" content="Jekyll v3.9.2" />
+<meta property="og:title" content="ExoTracker Issues - Abandoning the grid" />
+<meta name="author" content="nyanpasu64" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="Trackers have decades of design, with interlocking features and design decisions, many based on the assumption that every event is quantized on a grid:" />
+<meta property="og:description" content="Trackers have decades of design, with interlocking features and design decisions, many based on the assumption that every event is quantized on a grid:" />
+<link rel="canonical" href="https://nyanpasu64.gitlab.io/blog/exotracker-issues-abandoning-the-grid/" />
+<meta property="og:url" content="https://nyanpasu64.gitlab.io/blog/exotracker-issues-abandoning-the-grid/" />
+<meta property="og:site_name" content="nyanpasu64’s blog [OLD]" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2020-10-10T19:16:00-07:00" />
+<meta name="twitter:card" content="summary" />
+<meta property="twitter:title" content="ExoTracker Issues - Abandoning the grid" />
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"nyanpasu64"},"dateModified":"2020-10-10T19:16:00-07:00","datePublished":"2020-10-10T19:16:00-07:00","description":"Trackers have decades of design, with interlocking features and design decisions, many based on the assumption that every event is quantized on a grid:","headline":"ExoTracker Issues - Abandoning the grid","mainEntityOfPage":{"@type":"WebPage","@id":"https://nyanpasu64.github.io/blog/exotracker-issues-abandoning-the-grid/"},"url":"https://nyanpasu64.github.io/blog/exotracker-issues-abandoning-the-grid/"}</script>
+<!-- End Jekyll SEO tag -->
+<link rel="stylesheet" href="/assets/main.css"><link type="application/atom+xml" rel="alternate" href="https://nyanpasu64.github.io/feed.xml" title="nyanpasu64's blog [OLD]" /></head>
+<body><header class="site-header" role="banner">
+
+  <div class="wrapper"><a class="site-title" rel="author" href="/">nyanpasu64&#39;s blog [OLD]</a><nav class="site-nav">
+        <input type="checkbox" id="nav-trigger" class="nav-trigger" />
+        <label for="nav-trigger">
+          <span class="menu-icon">
+            <svg viewBox="0 0 18 15" width="18px" height="15px">
+              <path d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.032C17.335,0,18,0.665,18,1.484L18,1.484z M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.032C17.335,6.031,18,6.696,18,7.516L18,7.516z M18,13.516C18,14.335,17.335,15,16.516,15H1.484 C0.665,15,0,14.335,0,13.516l0,0c0-0.82,0.665-1.483,1.484-1.483h15.032C17.335,12.031,18,12.695,18,13.516L18,13.516z"/>
+            </svg>
+          </span>
+        </label>
+
+        <div class="trigger">
+          <a class="page-link" href="https://nyanpasu64.gitlab.io/blog/exotracker-issues-abandoning-the-grid/">New site</a>
+        </div>
+      </nav></div>
+</header>
+<main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+
+  <header class="post-header">
+    <h1 class="post-title p-name" itemprop="name headline">ExoTracker Issues - Abandoning the grid</h1>
+    <p class="post-meta">
+      <time class="dt-published" datetime="2020-10-10T19:16:00-07:00" itemprop="datePublished">Oct 10, 2020
+      </time></p>
+      <a class="page-link" href="https://nyanpasu64.gitlab.io/blog/exotracker-issues-abandoning-the-grid/">This site has moved!</a>
+  </header>
+
+  <div class="post-content e-content" itemprop="articleBody">
+    <p>Trackers have decades of design, with interlocking features and design decisions, many based on the assumption that every event is quantized on a grid:</p>
+
+<ul>
+  <li>You don’t need lines above events, since it’s obvious which row the event is in.
+    <ul>
+      <li>In regular trackers, events are treated as taking up height. Most events are triggered when the cursor enters them, but pattern-jump effects are triggered when the cursor exits them.</li>
+    </ul>
+  </li>
+  <li>Empty grid cells have dashes in them, to indicate an empty slot belonging to a subcolumn (note/instrument/volume/effect…) and row. (I refer to channels as columns, for historical reasons and because Renoise uses the same terminology.)</li>
+</ul>
+
+<p>ExoTracker’s central feature is that events/notes no longer have to be quantized to a grid, but are stored as rational numbers (fractions) in terms of “beats”. Events are mapped onto rows using a zoom level (rows per beat), and changing the zoom level causes notes to fall onto or off gridlines.</p>
+
+<p>(tl;dr: Skip forwards to <a href="#per-digit-cursors">“Per-digit cursors”</a> where the problems start.)</p>
+
+<figure class="image">
+  <img srcset="exotracker_full_subcolumn_cursor.png 1.25x" src="exotracker_full_subcolumn_cursor.png" alt="In ExoTracker, each subcolumn has a different background color. The instrument subcolumn has two digits plus padding. The cursor is located in the instrument subcolumn, and takes up both digits plus padding." />
+  <figcaption>In ExoTracker, each subcolumn has a different background color. The instrument subcolumn has two digits plus padding. The cursor is located in the instrument subcolumn, and takes up both digits plus padding.</figcaption>
+</figure>
+
+<p>As a result, many tracker conventions must be adapted to work with off-grid notes.</p>
+
+<ul>
+  <li>Closely spaced notes/events can cause text to draw over other text. I programmed lower events to erase the text drawn by upper events.</li>
+  <li>The “events have height” model breaks down when off-grid events exist and you can change the zoom level. So I draw a line above every note, representing the instant in time the event occurs at (which I find easier to reason about than 1-row-tall events).
+    <ul>
+      <li>Initially, for each event, I drew a line across all subcolumns (even empty ones), but that became confusing when combined with closely spaced events erasing text in only occupied subcolumns (not empty ones).</li>
+      <li>So now only occupied subcolumns have lines.</li>
+    </ul>
+  </li>
+  <li>Pressing Delete 4 times will no longer delete all notes in the next 4 rows, because it won’t erase events between rows.
+    <ul>
+      <li>I felt that the alternative, where pressing Delete also deletes notes in between rows, would be more confusing and inflexible for users.</li>
+    </ul>
+  </li>
+  <li>So I made “cursor step” both snap to the grid and off-grid notes… which is actually rather janky and surprising.
+    <ul>
+      <li>The issue is that my code snaps to all events in the channel, not just events with a non-empty value in the cursor X position’s subcolumn. Changing this would complicate the code.</li>
+      <li>To alleviate this, I turned off off-grid event snapping, and added a mode where pressing Delete (or entering a value) steps to the next event, regardless of the cursor’s X subcolumn. This is useful for deleting many events, adding or changing instruments, etc.</li>
+    </ul>
+  </li>
+  <li>Trackers usually have gaps between note/event/volume/effect, so I add padding around each subcolumn.</li>
+  <li>If empty grid cells are drawn with dashes, then on-grid notes will erase the dash. But it’s not clear if off-grid or triplet notes should erase the dashes or not. I chose to replace dashes with horizontal gridlines. But they don’t indicate subcolumns, so I add colored backgrounds.
+    <ul>
+      <li>One alternative would be to draw dashes before drawing events, and simply erase dashes whenever text overlaps them. This looks fine with on-grid events, but with off-grid events, you can end up with partial dashes which might look a bit ugly.
+        <ul>
+          <li><strong>In retrospect, this was probably a better idea, since colored backgrounds proved to be a disaster.</strong></li>
+        </ul>
+      </li>
+    </ul>
+  </li>
+</ul>
+
+<h2 id="per-digit-cursors">Per-digit cursors</h2>
+
+<p>Everything was more-or-less working, until I added per-digit cursors and the setup broke down. Suddenly the cursor width became highly inconsistent; the cursor is wider when you place it in the leftmost or rightmost digit of a subcolumn.</p>
+
+<figure class="image">
+  <img srcset="exotracker_cursor_positions.gif 1.25x" src="exotracker_cursor_positions.gif" alt="The effect subcolumn has three positions, or one character plus two digits. The cursor is wider in the left and right subcolumn, and narrower in the center." />
+  <figcaption>The effect subcolumn has three positions, or one character plus two digits. The cursor is wider in the left and right subcolumn, and narrower in the center.</figcaption>
+</figure>
+
+<p>So I can make the cursor narrower… now there’s a gap around the cursor. And several people have said the gap looks very weird, so this isn’t a good solution.</p>
+
+<figure class="image">
+  <img srcset="exotracker_gap_around_cursor.png 1.25x" src="exotracker_gap_around_cursor.png" alt="There is a gap between the left border of the subcolumn's background, and the cursor's left boundary. The same issue occurs with the right of each subcolumn." />
+  <figcaption>There is a gap between the left border of the subcolumn's background, and the cursor's left boundary. The same issue occurs with the right of each subcolumn.</figcaption>
+</figure>
+
+<figure class="image">
+  <img srcset="exotracker_gap_around_cursor_2.png 1.25x" src="exotracker_gap_around_cursor_2.png" alt="There is a gap between the note subcolumn's boundaries and the cursor's boundaries." />
+  <figcaption>There is a gap between the note subcolumn's boundaries and the cursor's boundaries.</figcaption>
+</figure>
+
+<p>This is actually what FamiTracker does too, but it doesn’t look ugly because there aren’t background stripes.</p>
+
+<figure class="image">
+  <img srcset="famitracker_cursor_positions.gif 1.25x" src="famitracker_cursor_positions.gif" alt="I screen-recorded all cursor positions of FamiTracker into an animated GIF, and overlayed the frames into a single screenshot. There are gaps to the left and right of each subcolumn (note, instrument, volume, and effect). The composite screenshot is ugly." />
+  <figcaption>I screen-recorded all cursor positions of FamiTracker into an animated GIF, and overlayed the frames into a single screenshot. There are gaps to the left and right of each subcolumn (note, instrument, volume, and effect). The composite screenshot is ugly.</figcaption>
+</figure>
+
+<p>So do I make the stripes narrower?</p>
+
+<figure class="image">
+  <img srcset="exotracker_narrow_subcolumn_background.png 1.25x" src="exotracker_narrow_subcolumn_background.png" alt="The background color is confined to the width filled by text and selectable by the cursor. There are gray stripes around each subcolumn. It's still ugly." />
+  <figcaption>The background color is confined to the width filled by text and selectable by the cursor. There are gray stripes around each subcolumn. It's still ugly.</figcaption>
+</figure>
+
+<p>Get rid of the dividers too?</p>
+
+<figure class="image">
+  <img srcset="no_dividers.png 1.25x" src="no_dividers.png" alt="Now the subcolumn dividers are gone, replaced by gray stripes. It looks weird to have middle gaps wider than side gaps." />
+  <figcaption>Now the subcolumn dividers are gone, replaced by gray stripes. It looks weird to have middle gaps wider than side gaps.</figcaption>
+</figure>
+
+<p>So I can make them the same width… but then either the note lines overlap, or they have gaps, or the widths are inconsistent. This will cause problems with mouse handling as well.</p>
+
+<figure class="image">
+  <img srcset="no_dividers_rearranged.png 1.25x" src="no_dividers_rearranged.png" alt="The gray lines are rearranged, such that the width between subcolumns equals the width between a subcolumn and a channel divider. The note lines overlap." />
+  <figcaption>The gray lines are rearranged, such that the width between subcolumns equals the width between a subcolumn and a channel divider. The note lines overlap.</figcaption>
+</figure>
+
+<h2 id="a-solution">A solution?</h2>
+
+<p>At this point, I feel that background stripes to indicate subcolumn boundaries, and cursors which occupy digits within a multi-digit subcolumn, are simply incompatible.</p>
+
+<p>If I want to keep that latter feature, I could remove background stripes and replace them with dashes, which are erased whenever text overlaps them. This looks fine with on-grid events, but with off-grid events, you can end up with partial dashes which might look a bit ugly.</p>
+
+  </div>
+
+  <script src="https://utteranc.es/client.js"
+        repo="nyanpasu64/nyanpasu64.github.io"
+        issue-term="pathname"
+        theme="github-light"
+        crossorigin="anonymous"
+        async>
+</script>
+
+
+  <a class="u-url" href="/blog/exotracker-issues-abandoning-the-grid/" hidden></a>
+</article>
+
+      </div>
+    </main><footer class="site-footer h-card">
+  <data class="u-url" href="/"></data>
+
+  <div class="wrapper">
+
+    <!-- <h2 class="footer-heading">nyanpasu64&#39;s blog [OLD]</h2> -->
+
+    <div class="footer-col-wrapper">
+      <div class="footer-col footer-col-1">
+        <ul class="contact-list">
+          <li class="p-name">
+            nyanpasu64&#39;s blog [OLD]
+          </li>
+        </ul>
+      </div>
+
+      <div class="footer-col footer-col-2"><ul class="social-media-list"><li><a href="https://github.com/nyanpasu64"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#github"></use></svg> <span class="username">nyanpasu64</span></a></li><li><a href="https://write.as/nyanpasu64"><span class="username">My microblog</span></a></li>
+</ul>
+</div>
+
+      <div class="footer-col footer-col-3">
+        <p>Adventures in programming, DSP, and chiptune</p>
+      </div>
+    </div>
+
+  </div>
+
+</footer>
+</body>
+
+</html>

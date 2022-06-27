@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.8.0 -->
+<title>The gridline mental model of indexing and slicing | nyanpasu64’s blog [OLD]</title>
+<meta name="generator" content="Jekyll v3.9.2" />
+<meta property="og:title" content="The gridline mental model of indexing and slicing" />
+<meta name="author" content="nyanpasu64" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="Republished from my Github gist." />
+<meta property="og:description" content="Republished from my Github gist." />
+<link rel="canonical" href="https://nyanpasu64.gitlab.io/blog/the-gridline-mental-model-of-indexing-and-slicing/" />
+<meta property="og:url" content="https://nyanpasu64.gitlab.io/blog/the-gridline-mental-model-of-indexing-and-slicing/" />
+<meta property="og:site_name" content="nyanpasu64’s blog [OLD]" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2020-05-08T13:26:00-07:00" />
+<meta name="twitter:card" content="summary" />
+<meta property="twitter:title" content="The gridline mental model of indexing and slicing" />
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"nyanpasu64"},"dateModified":"2020-05-08T13:26:00-07:00","datePublished":"2020-05-08T13:26:00-07:00","description":"Republished from my Github gist.","headline":"The gridline mental model of indexing and slicing","mainEntityOfPage":{"@type":"WebPage","@id":"https://nyanpasu64.github.io/blog/the-gridline-mental-model-of-indexing-and-slicing/"},"url":"https://nyanpasu64.github.io/blog/the-gridline-mental-model-of-indexing-and-slicing/"}</script>
+<!-- End Jekyll SEO tag -->
+<link rel="stylesheet" href="/assets/main.css"><link type="application/atom+xml" rel="alternate" href="https://nyanpasu64.github.io/feed.xml" title="nyanpasu64's blog [OLD]" /></head>
+<body><header class="site-header" role="banner">
+
+  <div class="wrapper"><a class="site-title" rel="author" href="/">nyanpasu64&#39;s blog [OLD]</a><nav class="site-nav">
+        <input type="checkbox" id="nav-trigger" class="nav-trigger" />
+        <label for="nav-trigger">
+          <span class="menu-icon">
+            <svg viewBox="0 0 18 15" width="18px" height="15px">
+              <path d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.032C17.335,0,18,0.665,18,1.484L18,1.484z M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.032C17.335,6.031,18,6.696,18,7.516L18,7.516z M18,13.516C18,14.335,17.335,15,16.516,15H1.484 C0.665,15,0,14.335,0,13.516l0,0c0-0.82,0.665-1.483,1.484-1.483h15.032C17.335,12.031,18,12.695,18,13.516L18,13.516z"/>
+            </svg>
+          </span>
+        </label>
+
+        <div class="trigger">
+          <a class="page-link" href="https://nyanpasu64.gitlab.io/blog/the-gridline-mental-model-of-indexing-and-slicing/">New site</a>
+        </div>
+      </nav></div>
+</header>
+<main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+
+  <header class="post-header">
+    <h1 class="post-title p-name" itemprop="name headline">The gridline mental model of indexing and slicing</h1>
+    <p class="post-meta">
+      <time class="dt-published" datetime="2020-05-08T13:26:00-07:00" itemprop="datePublished">May 8, 2020
+      </time></p>
+      <a class="page-link" href="https://nyanpasu64.gitlab.io/blog/the-gridline-mental-model-of-indexing-and-slicing/">This site has moved!</a>
+  </header>
+
+  <div class="post-content e-content" itemprop="articleBody">
+    <p><em>Republished from my <a href="https://gist.github.com/nyanpasu64/c01e50ad97b1a92ccea374c3f941dd93#file-index-md">Github gist</a>.</em></p>
+
+<p>Integer indexes can either represent fenceposts (gridlines) or item pointers, and there’s a sort of duality.</p>
+
+<h2 id="mental-model-gridline-based-asymmetric-indexing">Mental model: Gridline-based “asymmetric indexing”</h2>
+
+<p>Memory or data is treated as a “pool of memory”. Pointers and indices do not refer to <em>elements</em>, but <em>gaps between elements</em> (in other words, fenceposts or gridlines). This is the same way I think about wall clocks and musical time subdivision, where time is continuous and timestamps refer to <em>instants</em> which separate regions of time.</p>
+
+<p>In C and Python, array indexing can be interpreted via a mental model of gridlines. If <code class="language-plaintext highlighter-rouge">a</code> is an array holding elements, then <code class="language-plaintext highlighter-rouge">a[x]</code> is the element after gridline <code class="language-plaintext highlighter-rouge">x</code>. I call this “asymmetric indexing” (since every pointer refers to memory lying on the right side of it), but it’s a useful convention. In C, if the array <code class="language-plaintext highlighter-rouge">a</code> holds elements of size <code class="language-plaintext highlighter-rouge">s</code>, <code class="language-plaintext highlighter-rouge">a[x]</code> occupies bytes from <code class="language-plaintext highlighter-rouge">(byte*)(a) + s*x</code> up until <code class="language-plaintext highlighter-rouge">(byte*)(a) + s*(x+1)</code>.</p>
+
+<p>In Python, if <code class="language-plaintext highlighter-rouge">x</code> is a list (actually a resizable contiguous array), <code class="language-plaintext highlighter-rouge">x[0]</code> is the first element (after gridline 0), and <code class="language-plaintext highlighter-rouge">x[-1]</code> is the last element, 1 before the end (after gridline <code class="language-plaintext highlighter-rouge">len(x)-1</code>). This behavior matches a subset of modular arithmetic.</p>
+
+<p>In C++, <code class="language-plaintext highlighter-rouge">iterator</code> and <code class="language-plaintext highlighter-rouge">reverse_iterator</code> both point to fenceposts between items. An array can have valid iterators or reverse iterators pointing to “before the first element”, “after the last element”, or anywhere in between.</p>
+
+<p>Dereferencing a forward iterator accesses the element <em>after</em> the gridline, much like <code class="language-plaintext highlighter-rouge">*ptr</code> with a raw pointer. However, dereferencing a reverse iterator accesses the element <em>before</em> the gridline, which compiles to <code class="language-plaintext highlighter-rouge">*(ptr - 1)</code>. As a result, <code class="language-plaintext highlighter-rouge">reverse_iterator</code> appears to be slightly slower on actual CPUs: <a href="https://stackoverflow.com/a/2549554">https://stackoverflow.com/a/2549554</a>.</p>
+
+<p>cppreference.com has a diagram attempting to explain <code class="language-plaintext highlighter-rouge">reverse_iterator</code>:</p>
+
+<p><img src="http://upload.cppreference.com/mwiki/images/3/39/range-rbegin-rend.svg" alt="cppreference.com reverse_iterator diagram" /></p>
+
+<p>I think the diagram is badly designed and unnecessarily confusing, with two arrows coming from the top of the diagram, and two pictures of the array offset by one element. It’s technically not wrong, but it assumes that pointers point to <em>objects</em>, not <em>fenceposts</em>, which is a very inelegant mental model for this purpose.</p>
+
+<h2 id="alternative-mental-model-item-based-indexing">Alternative mental model: Item-based indexing</h2>
+
+<p>In pure math and DSP, and at high levels of abstraction, you can instead treat each item as an indivisible entity, rather than occupying a region of memory bounded between 2 endpoints. Then indexing points to an object, not an address or gridline in memory. In this mental model, slicing behaves quite differently.</p>
+
+<p>You can choose to index from 0 or 1. Indexing from 0 or 1 is somewhat orthogonal to gridline-based or item-based indexing. However, most gridline-based languages index from 0, and many item-based languages index from 1.</p>
+
+<p>The R language operates under this mental model. Much like mathematical notation, indexes begin at 1, and ranges of items <code class="language-plaintext highlighter-rouge">a[1:5]</code> are inclusive on both ends. In fact, <code class="language-plaintext highlighter-rouge">1:5</code> generates a vector of integers <code class="language-plaintext highlighter-rouge">1 2 3 4 5</code>.</p>
+
+<p>The item-based mental model (with inclusive ranges) is useful in some cases, for example in DSP. However I moved that to a separate article, <a href="../describing-convolution-using-item-based-indexing-and-inclusive-ranges">“Describing convolution using item-based indexing and inclusive ranges”</a>, since it’s not closely related to indexing.</p>
+
+<h2 id="gridline-based-slicing-and-closed-closed-indexing">Gridline-based slicing and closed-closed indexing</h2>
+
+<p>Assume you have an array <code class="language-plaintext highlighter-rouge">a</code> with <code class="language-plaintext highlighter-rouge">N</code> elements.</p>
+
+<p>For a region between gridlines <code class="language-plaintext highlighter-rouge">a ≤ b</code> to be valid, <code class="language-plaintext highlighter-rouge">a ≥ arr</code> and <code class="language-plaintext highlighter-rouge">b ≤ arr + N</code>. Note that <code class="language-plaintext highlighter-rouge">b</code> (and also <code class="language-plaintext highlighter-rouge">a</code>) is allowed to be equal to the final gridline, which is a perfectly valid gridline! The only reason people consider it “out of bounds” or “past the end of the array” is because it has no element to its right (cannot be used for asymmetric indexing).</p>
+
+<p>What are the valid indices into an array of length N, treating the first element as 0?</p>
+
+<ul>
+  <li>Conventional wisdom believes that valid array indices lie in a closed-open range.</li>
+  <li>begin ∈ [0..N) since element 0 is valid, but element 0 is past the end of the array.</li>
+</ul>
+
+<p>Another approach is to model “valid array indices” as a special case of “valid array slices”, where the slice is of length 1. Under this approach, valid indices lie within a “closed-closed” inclusive range.</p>
+
+<p>What are the valid starting indices of length-1 regions within an array?</p>
+
+<ul>
+  <li>begin ≥ 0, otherwise the start of the region will lie outside the array.</li>
+  <li>begin + 1 ≤ N, otherwise the end of the region will lie outside the array.</li>
+  <li>begin ∈ [0..N-1]</li>
+</ul>
+
+<p>What are the valid starting indices of length-2 regions within an array?</p>
+
+<ul>
+  <li>begin ≥ 0, otherwise the start of the region will lie outside the array.</li>
+  <li>begin + 2 ≤ N, otherwise the end of the region will lie outside the array.</li>
+  <li>begin ∈ [0..N-2]</li>
+</ul>
+
+<p>In summary, obtaining indexes from inclusive ranges are good because “valid indexes” are a special case of “valid slice starting indices” which are modeled well by inclusive ranges. Under this line of logic, a pair of pointers, <code class="language-plaintext highlighter-rouge">(pointer to begin, pointer to end)</code>, describes a slice of memory. I feel like this mental model is underused, and explaining it would help people understand C++’s <code class="language-plaintext highlighter-rouge">reverse_iterator</code> better.</p>
+
+<p>Obtaining indexes from half-open ranges are good if you either assume “asymmetric indexing” (don’t think in terms of slicing), or treat each item as an indivisible entity (alternative mental model, zero-indexed). Under this line of logic, <code class="language-plaintext highlighter-rouge">(pointer to begin, pointer to end)</code> is interpreted as <code class="language-plaintext highlighter-rouge">(pointer to first element, pointer past the final element)</code>, which is how how I’ve seen it be described by some people.</p>
+
+<p>I feel languages should have both half-open ranges to generate indexes, and inclusive ranges to generate slice endpoints. Python only has half-open ranges, and math only has inclusive ranges. Rust has both, but unfortunately inclusive ranges are very slow and unoptimized compared to half-open ranges.</p>
+
+<h2 id="issue-negative-indexing-is-asymmetric">Issue: negative indexing is asymmetric</h2>
+
+<p>To me, negative indexing is awkward in python. The first 2 elements in an list are <code class="language-plaintext highlighter-rouge">a[0]</code> and <code class="language-plaintext highlighter-rouge">a[1]</code>, but the last 2 elements are <code class="language-plaintext highlighter-rouge">a[-1]</code> and <code class="language-plaintext highlighter-rouge">a[-2]</code>. Interpreting this under the grid model, this arises because indexing <code class="language-plaintext highlighter-rouge">a[i]</code> takes the element <em>after</em> gridline <code class="language-plaintext highlighter-rouge">i</code>, which is inherently asymmetric.</p>
+
+<h2 id="issue-modular-negative-slicing-and-circularity-is-ambiguous">Issue: modular negative slicing and circularity is ambiguous</h2>
+
+<p>In Python, <em>item indexes</em> into a length-N array (where integer indices refer to the item after the gridline) conform to mod-N arithmetic. Each integer index is either interpreted mod N, or raises an “out of bounds” exception.</p>
+
+<p>However, <em>slice endpoints</em> do <em>not</em> quite conform to modular indexing mod N. This is because fenceposts 0 and N are distinct gridlines in memory, but are conflated under mod-N operation.</p>
+
+<p>In Python, if you want to access the last 2 elements in a length-N array, you can write <code class="language-plaintext highlighter-rouge">a[N-2:N-0]</code>. If you treat slice endpoints as modular indexes mod N, you can abbreviate this to <code class="language-plaintext highlighter-rouge">[-2:-0]</code>. But this instead returns an empty slice from N-2 to 0, since unlike array indexes, Python slice endpoints don’t quite conform to modular indexing. And Python has no concept of a “negative zero” integer index meaning something different.</p>
+
+<p>Because CSS grid has no fencepost 0, it sidesteps this issue entirely. Negating a slice endpoint always switches between “counting from the left” and “counting from the right”.</p>
+
+<h3 id="numpy-violates-modular-arithmetic">Numpy violates modular arithmetic</h3>
+
+<p>One place where this issue comes up is in Numpy. By analogy, in Python, you can assign to list slices to replace part of a list with other elements. For example, you can write <code class="language-plaintext highlighter-rouge">a[x:y] = [...]</code>. To insert one item, you can write <code class="language-plaintext highlighter-rouge">a[x:x] = [1]</code>. Given Python’s slicing rules, <code class="language-plaintext highlighter-rouge">a[0:0] = [1]</code> inserts an element before the beginning of the list, and <code class="language-plaintext highlighter-rouge">a[-1:-1] = [1]</code> inserts an element <em>before</em> the last element of the list (not at the end of the list!) This is better written as <code class="language-plaintext highlighter-rouge">a.insert(x, 1)</code> where x can be any valid fencepost (including N which is not a valid index).</p>
+
+<p>Numpy has an operation called <code class="language-plaintext highlighter-rouge">np.stack()</code> where you combine two or more N-dimensional arrays into a N+1-dimensional array. All input arrays have identical <code class="language-plaintext highlighter-rouge">shape: N-dimensional tuple</code> determining the dimensionality needed to index the array all the way. The output array has the same <code class="language-plaintext highlighter-rouge">shape</code> as the inputs, but with an extra element equal to the number of arrays you’ve passed in.</p>
+
+<p><code class="language-plaintext highlighter-rouge">np.stack(axis=0)</code> is analogous to <code class="language-plaintext highlighter-rouge">shape.insert(0, number of inputs)</code>. But <code class="language-plaintext highlighter-rouge">np.stack(axis=-1)</code> is analogous to <code class="language-plaintext highlighter-rouge">shape.insert(N - 0, number of inputs)</code>, not <code class="language-plaintext highlighter-rouge">N - 1</code>. 🤢</p>
+
+<h3 id="css-grid-fixes-negative-slicing-but-not-negative-indexing">CSS Grid fixes negative slicing but not negative indexing</h3>
+
+<p>CSS Grid allows web developers to dynamically position elements in table-like grids. In this case, fenceposts are <em>literally</em> gridlines between on-screen items. A layout with N columns (declared using <code class="language-plaintext highlighter-rouge">grid-template-columns</code>) has N+1 gridlines. (Tracks are columns or rows.)</p>
+
+<p>Interestingly, gridline 0 does not exist. Gridline 1 is the leftmost gridline before the first item, and gridline N+1 is the rightmost gridline after the last item. Also, gridline -1 is the rightmost gridline, and gridline -(N+1) is the leftmost gridline. This is 1 greater than Python’s positive slicing, and 1 smaller than Python’s negative slicing.</p>
+
+<p>In the case of <code class="language-plaintext highlighter-rouge">grid-column</code> and <code class="language-plaintext highlighter-rouge">grid-row</code>, when inserting an item into the table, you can “slice” using <code class="language-plaintext highlighter-rouge">a / b</code> syntax to specify a start and end gridline. Or you can “index” using <code class="language-plaintext highlighter-rouge">a</code> syntax, so the browser infers <code class="language-plaintext highlighter-rouge">b = a+1</code> (the item spans one track = row or column). Which is <em>almost</em> an amazing idea.  Except when <code class="language-plaintext highlighter-rouge">a</code> is -1, then <code class="language-plaintext highlighter-rouge">b</code> is inferred to be 0, not -2. And you end up with an item placed “out of bounds” and past the last column and gridline you declared. They were <em>so close</em> to achieving perfect symmetry between positive and negative indexing. At least in CSS you won’t get any buffer overflows 😉</p>
+
+<h3 id="text-field-cursor-affinity">Text field cursor affinity</h3>
+
+<p>A related issue is in text editing. If you’re in a long paragraph and press the End key on a keyboard, the cursor will be placed after the last word in the current line, and after the space too. If you go to the next line and press the Home key, the cursor will be placed before the first word. But these 2 locations represent the same byte index into the text document! At this point, if you press the left and right arrow keys, you’ll get unusual cursor behavior which differs between programs:</p>
+
+<ul>
+  <li>Sublime Text snaps the cursor to the previous line (which I don’t like).</li>
+  <li>VS Code keeps the cursor on the current line.</li>
+  <li>Chrome, Notepad, and Qt apps snap the cursor to the next line.</li>
+  <li>Firefox treats “end of the current line” and “beginning of the second line” as separate locations. If you’re at the end of a line (the same spot as the beginning of the next word), you need to press Right twice to get 1 character into the next word!</li>
+</ul>
+
+<p>The same behavior occurs if a single very long word is wrapped across multiple lines. And each program listed above behaves identically, regardless if you’re wrapping a paragraph or single word.</p>
+
+<p>This behavior was briefly described in <a href="https://lord.io/blog/2019/text-editing-hates-you-too/">https://lord.io/blog/2019/text-editing-hates-you-too/</a> “Affinity”. That site only mentions single long words wrapped across multiple lines.</p>
+
+<p>Reality is awful. There is no perfect solution.</p>
+
+<h3 id="ring-buffers">Ring buffers</h3>
+
+<p>(Note that I am not an expert on ring buffers.)</p>
+
+<p>A ring buffer contains a length-N array, and (one design choice is) two pointers/indices into the array. The assumption is that the “write pointer” points to (the gridline before) the first element not written yet, and the “read pointer” points to (the gridline before) the first element which can be read. If a ring buffer has begin_ptr == end_ptr, is it empty or full? You can’t tell! One solution is to always leave 1 element unwritten at all times. Another is to keep one pointer and a length counter (which ranges from 0 through N inclusive).</p>
+
+<h2 id="prior-art">Prior art</h2>
+
+<p><a href="https://wiki.c2.com/?FencePostError">https://wiki.c2.com/?FencePostError</a></p>
+
+<p><a href="https://news.ycombinator.com/item?id=6601515">https://news.ycombinator.com/item?id=6601515</a>, first comment <a href="https://news.ycombinator.com/item?id=6602497">https://news.ycombinator.com/item?id=6602497</a></p>
+
+  </div>
+
+  <script src="https://utteranc.es/client.js"
+        repo="nyanpasu64/nyanpasu64.github.io"
+        issue-term="pathname"
+        theme="github-light"
+        crossorigin="anonymous"
+        async>
+</script>
+
+
+  <a class="u-url" href="/blog/the-gridline-mental-model-of-indexing-and-slicing/" hidden></a>
+</article>
+
+      </div>
+    </main><footer class="site-footer h-card">
+  <data class="u-url" href="/"></data>
+
+  <div class="wrapper">
+
+    <!-- <h2 class="footer-heading">nyanpasu64&#39;s blog [OLD]</h2> -->
+
+    <div class="footer-col-wrapper">
+      <div class="footer-col footer-col-1">
+        <ul class="contact-list">
+          <li class="p-name">
+            nyanpasu64&#39;s blog [OLD]
+          </li>
+        </ul>
+      </div>
+
+      <div class="footer-col footer-col-2"><ul class="social-media-list"><li><a href="https://github.com/nyanpasu64"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#github"></use></svg> <span class="username">nyanpasu64</span></a></li><li><a href="https://write.as/nyanpasu64"><span class="username">My microblog</span></a></li>
+</ul>
+</div>
+
+      <div class="footer-col footer-col-3">
+        <p>Adventures in programming, DSP, and chiptune</p>
+      </div>
+    </div>
+
+  </div>
+
+</footer>
+</body>
+
+</html>

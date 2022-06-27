@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.8.0 -->
+<title>ExoTracker Newsletter #1 | nyanpasu64’s blog [OLD]</title>
+<meta name="generator" content="Jekyll v3.9.2" />
+<meta property="og:title" content="ExoTracker Newsletter #1" />
+<meta name="author" content="nyanpasu64" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="I just finished implementing timeline entry editing. Since I have school coming up, I decided to release a demo of its current state. Since my summary was getting a bit too long to post in Discord, I decided to write a blog post / newsletter." />
+<meta property="og:description" content="I just finished implementing timeline entry editing. Since I have school coming up, I decided to release a demo of its current state. Since my summary was getting a bit too long to post in Discord, I decided to write a blog post / newsletter." />
+<link rel="canonical" href="https://nyanpasu64.gitlab.io/blog/exotracker-newsletter-1/" />
+<meta property="og:url" content="https://nyanpasu64.gitlab.io/blog/exotracker-newsletter-1/" />
+<meta property="og:site_name" content="nyanpasu64’s blog [OLD]" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2020-08-26T01:46:00-07:00" />
+<meta name="twitter:card" content="summary" />
+<meta property="twitter:title" content="ExoTracker Newsletter #1" />
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"nyanpasu64"},"dateModified":"2020-08-26T01:46:00-07:00","datePublished":"2020-08-26T01:46:00-07:00","description":"I just finished implementing timeline entry editing. Since I have school coming up, I decided to release a demo of its current state. Since my summary was getting a bit too long to post in Discord, I decided to write a blog post / newsletter.","headline":"ExoTracker Newsletter #1","mainEntityOfPage":{"@type":"WebPage","@id":"https://nyanpasu64.github.io/blog/exotracker-newsletter-1/"},"url":"https://nyanpasu64.github.io/blog/exotracker-newsletter-1/"}</script>
+<!-- End Jekyll SEO tag -->
+<link rel="stylesheet" href="/assets/main.css"><link type="application/atom+xml" rel="alternate" href="https://nyanpasu64.github.io/feed.xml" title="nyanpasu64's blog [OLD]" /></head>
+<body><header class="site-header" role="banner">
+
+  <div class="wrapper"><a class="site-title" rel="author" href="/">nyanpasu64&#39;s blog [OLD]</a><nav class="site-nav">
+        <input type="checkbox" id="nav-trigger" class="nav-trigger" />
+        <label for="nav-trigger">
+          <span class="menu-icon">
+            <svg viewBox="0 0 18 15" width="18px" height="15px">
+              <path d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.032C17.335,0,18,0.665,18,1.484L18,1.484z M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.032C17.335,6.031,18,6.696,18,7.516L18,7.516z M18,13.516C18,14.335,17.335,15,16.516,15H1.484 C0.665,15,0,14.335,0,13.516l0,0c0-0.82,0.665-1.483,1.484-1.483h15.032C17.335,12.031,18,12.695,18,13.516L18,13.516z"/>
+            </svg>
+          </span>
+        </label>
+
+        <div class="trigger">
+          <a class="page-link" href="https://nyanpasu64.gitlab.io/blog/exotracker-newsletter-1/">New site</a>
+        </div>
+      </nav></div>
+</header>
+<main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+
+  <header class="post-header">
+    <h1 class="post-title p-name" itemprop="name headline">ExoTracker Newsletter #1</h1>
+    <p class="post-meta">
+      <time class="dt-published" datetime="2020-08-26T01:46:00-07:00" itemprop="datePublished">Aug 26, 2020
+      </time></p>
+      <a class="page-link" href="https://nyanpasu64.gitlab.io/blog/exotracker-newsletter-1/">This site has moved!</a>
+  </header>
+
+  <div class="post-content e-content" itemprop="articleBody">
+    <p>I just finished implementing timeline entry editing. Since I have school coming up, I decided to release a demo of its current state. Since my summary was getting a bit too long to post in Discord, I decided to write a blog post / newsletter.</p>
+
+<h2 id="demo-download">Demo download</h2>
+
+<p>Windows 64-bit: <a href="https://ci.appveyor.com/api/buildjobs/3e0uv6sxov74g50d/artifacts/exotracker-v1.0.60-dev.7z">https://ci.appveyor.com/api/buildjobs/3e0uv6sxov74g50d/artifacts/exotracker-v1.0.60-dev.7z</a></p>
+
+<p>Source: <a href="https://gitlab.com/nyanpasu64/exotracker-cpp/-/tree/timeline-editor">https://gitlab.com/nyanpasu64/exotracker-cpp/-/tree/timeline-editor</a> (currently commit d5386ea0). It only compiles in recent GCC and Clang (only tested Clang 10), due to using statement expressions.</p>
+
+<h2 id="demo-notes">Demo notes</h2>
+
+<ul>
+  <li><strong>Press Space to enable note entry, and Enter to play.</strong> Unfortunately, note preview is not supported yet.</li>
+  <li>ExoTracker uses a FamiTracker-style piano layout.</li>
+  <li>Only Famicom/NES APU1 is supported. Some demo songs have dual APU1 which can be used for composing.</li>
+  <li>Notes, instruments, and volumes are supported. Effects are not.</li>
+  <li>Try passing in names of sample documents as command-line arguments. Listed in order from most to least useful:
+    <ul>
+      <li>Partial songs: <code class="language-plaintext highlighter-rouge">dream-fragments</code>, <code class="language-plaintext highlighter-rouge">world-revolution</code> (default song)</li>
+      <li><code class="language-plaintext highlighter-rouge">empty</code> (add your own notes)</li>
+      <li><code class="language-plaintext highlighter-rouge">audio-test</code> (dual APU1) (sounds bad, but useful for finding audio stuttering)</li>
+      <li><code class="language-plaintext highlighter-rouge">block-test</code> (dual APU1) (rendering test for block system, no notes or events)</li>
+      <li><code class="language-plaintext highlighter-rouge">render-test</code> (sounds bad, negative octave text is too wide for the screen)</li>
+    </ul>
+  </li>
+  <li>Some sample documents have short and/or looped blocks (the gray rectangles to the left of each channel), which are not possible in most other trackers (I don’t know if LSDj and C64 trackers support this). But right now, users can only create full-grid blocks, and cannot delete blocks.
+    <ul>
+      <li>The block system is powerful, but unfortunately not editable through the UI yet, so you can’t try it out to see useful it is.</li>
+      <li>Pattern reuse is not implemented.</li>
+    </ul>
+  </li>
+  <li>All edits are undoable. Some but not all timeline edits save cursor position.</li>
+  <li>There are buttons for reordering timeline entries. They’re supposed to have icons instead of text, but icons are only available on my machine.</li>
+  <li>The actual timeline widget (list of rows) is unfinished and will be replaced with a custom-drawn widget.</li>
+  <li>The audio code will lock up if you decrease the timeline row length until a block has a negative length 😉</li>
+</ul>
+
+<h2 id="timeline-system-overview">Timeline system overview</h2>
+
+<p><strong>tl;dr skip forward to “Demo feedback” if you want to just play with the program instead of reading documentation.</strong></p>
+
+<p>The frame/order editor is replaced with a timeline editor, and its functionality is changed significantly.</p>
+
+<p>The pattern grid structure from existing trackers is carried over (under the name of timeline rows and grid cells). Each timeline row has its own length which can vary between rows (like OpenMPT, unlike FamiTracker). Each timeline row holds one timeline cell (or grid cell) per channel. However, unlike patterns, timeline cells do not contain events directly, but through several layers of indirection.</p>
+
+<p>A timeline cell can hold zero or more blocks, which carry a start and end time (in integer beats) and a pattern. These blocks have nonzero length, do not overlap in time, occur in increasing time order, and lie between 0 and the timeline cell’s length (the last block’s end time can take on a special value corresponding to “end of cell”)[1].</p>
+
+<p>Each block contains a single pattern, consisting of a list of events and an optional loop duration (in integer beats). The pattern starts playing when absolute time reaches the block’s start time, and stops playing when absolute time reaches the block’s end time. If the loop duration is set, whenever relative time (within the pattern) reaches the loop duration, playback jumps back to the pattern’s begin. A block can cut off a pattern’s events early when time reaches the block’s end time (either the pattern’s initial play or during a loop). However a block cannot start playback partway into a pattern (no plans to add support yet).</p>
+
+<p>Eventually, patterns can be reused in multiple blocks at different times (and possibly different channels).</p>
+
+<p>[1] I’m not sure what to do if a user shrinks a timeline row, which causes an numeric-end block to end past the cell, or an “end of cell” block to have a size ≤ 0, etc.</p>
+
+<h3 id="motivation">Motivation</h3>
+
+<p>The timeline system is intended to allow treating the program like FamiStudio or a tracker, with timestamps encoded relative to current pattern/frame begin, and reuse at pattern-level granularity. If you try to enter a note/volume/effect in a region without a block in place, a block is automatically created in the current channel, filling all empty space available (up to an entire grid cell) (not implemented yet).</p>
+
+<p>It is also intended to have a similar degree of flexibility as a DAW like Reaper (fine-grained block splitting and looping). The tradeoff is that because global timestamps are relative to grid cell begin, blocks are not allowed to cross grid cell boundaries (otherwise it would be painful to convert between block/pattern-relative and global timestamps).</p>
+
+<h2 id="unresolved-questions">Unresolved questions</h2>
+
+<ul>
+  <li>Are the gray block rectangles (to the left of each channel) ugly? I’m planning to use those to allow dragging patterns around, resizing them, and distinguishing reused patterns through color.</li>
+  <li>Should I rename the timeline to something else?
+    <ul>
+      <li>Sequence?</li>
+      <li>Order? (I feel it’s bad because “order” implies every entry is merely the ID of a single pattern, but in reality is a container for 0 or more loopable patterns.)</li>
+      <li>OpenMPT has an “order list” widget to edit a “sequence” of patterns; it uses two names for similar concepts.</li>
+    </ul>
+  </li>
+  <li>What should I call a row/unit in the timeline editor? It’s treated as a coarse unit of time and a container for blocks/patterns, but is not a pattern.
+    <ul>
+      <li>Grid row? Timeline/sequence row? (I keep confusing “timeline row” with “pattern row”. “Grid” is concise, but I don’t know if it’s an unintuitive name.)</li>
+      <li>Segment?</li>
+      <li>(Timeline/sequence) entry?</li>
+      <li>Cell? (currently used for “one row, one channel”)</li>
+    </ul>
+  </li>
+  <li>How should I improve my current behavior when adding and deleting timeline entries?
+    <ul>
+      <li>Should adding a new timeline entry move the cursor to the new entry’s row 0? Should undoing move the cursor to the same spot, move it to the old location, or leave the cursor in place?</li>
+      <li>Should deleting an timeline entry move the cursor to the former entry’s row 0? Should undoing move the cursor to the same spot, move it to the old location, or leave the cursor in place?</li>
+      <li>Eventually I’ll add the ability to right-click and add/delete timeline entries other than the one the cursor is in. Should the cursor move to the right-clicked entry, and stay there after undoing?</li>
+    </ul>
+  </li>
+  <li>Once the timeline widget is implemented, what should it show?
+    <ul>
+      <li>Titles for each sequence entry?</li>
+      <li>“Pattern overview” with coarse-grained visualizations of blocks (gray for unique blocks, colored for shared)? Should shared patterns have numbers? Names? Should all patterns have numbers (an idea I’m not a fan of)?</li>
+      <li>Draw both (and somehow try to find enough room for both)?</li>
+      <li>0CC has bookmarks and highlights, but doesn’t show all names.</li>
+    </ul>
+  </li>
+</ul>
+
+<h2 id="feedback">Feedback</h2>
+
+<p>If you find any crash bugs, let me know. (Some tricky-to-get-right areas were deleting the last row in the timeline, or deleting a long row and the cursor moves into the next, shorter, row.)</p>
+
+<p>If you have any UI or behavior suggestions, tell me too. (I personally think I got the code reasonably watertight, but the UI behavior is a toss-up and I have no clue how people will react.)</p>
+
+<p>You can report issues at <a href="https://gitlab.com/nyanpasu64/exotracker-cpp/-/issues">https://gitlab.com/nyanpasu64/exotracker-cpp/-/issues</a>.</p>
+
+  </div>
+
+  <script src="https://utteranc.es/client.js"
+        repo="nyanpasu64/nyanpasu64.github.io"
+        issue-term="pathname"
+        theme="github-light"
+        crossorigin="anonymous"
+        async>
+</script>
+
+
+  <a class="u-url" href="/blog/exotracker-newsletter-1/" hidden></a>
+</article>
+
+      </div>
+    </main><footer class="site-footer h-card">
+  <data class="u-url" href="/"></data>
+
+  <div class="wrapper">
+
+    <!-- <h2 class="footer-heading">nyanpasu64&#39;s blog [OLD]</h2> -->
+
+    <div class="footer-col-wrapper">
+      <div class="footer-col footer-col-1">
+        <ul class="contact-list">
+          <li class="p-name">
+            nyanpasu64&#39;s blog [OLD]
+          </li>
+        </ul>
+      </div>
+
+      <div class="footer-col footer-col-2"><ul class="social-media-list"><li><a href="https://github.com/nyanpasu64"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#github"></use></svg> <span class="username">nyanpasu64</span></a></li><li><a href="https://write.as/nyanpasu64"><span class="username">My microblog</span></a></li>
+</ul>
+</div>
+
+      <div class="footer-col footer-col-3">
+        <p>Adventures in programming, DSP, and chiptune</p>
+      </div>
+    </div>
+
+  </div>
+
+</footer>
+</body>
+
+</html>

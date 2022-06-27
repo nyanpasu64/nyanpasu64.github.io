@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.8.0 -->
+<title>ExoTracker Newsletter #2 - Pivoting to SNES, designing an instrument list | nyanpasu64’s blog [OLD]</title>
+<meta name="generator" content="Jekyll v3.9.2" />
+<meta property="og:title" content="ExoTracker Newsletter #2 - Pivoting to SNES, designing an instrument list" />
+<meta name="author" content="nyanpasu64" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="For those of you who aren’t already aware, ExoTracker is a tracker-like composing tool, based around subdividing beats instead of integer rows. This allows the user to place notes at arbitrary fractions of a beat (like sheet music), and additionally allows tracker-like delay effects (which can be negative, which is impossible in most trackers). Beat subdivision allows for mixing eighth notes and triplets, and using beats for timing (rather than rows) could make tempo calculation more intuitive than other trackers." />
+<meta property="og:description" content="For those of you who aren’t already aware, ExoTracker is a tracker-like composing tool, based around subdividing beats instead of integer rows. This allows the user to place notes at arbitrary fractions of a beat (like sheet music), and additionally allows tracker-like delay effects (which can be negative, which is impossible in most trackers). Beat subdivision allows for mixing eighth notes and triplets, and using beats for timing (rather than rows) could make tempo calculation more intuitive than other trackers." />
+<link rel="canonical" href="https://nyanpasu64.gitlab.io/blog/exotracker-newsletter-2-pivoting-to-snes/" />
+<meta property="og:url" content="https://nyanpasu64.gitlab.io/blog/exotracker-newsletter-2-pivoting-to-snes/" />
+<meta property="og:site_name" content="nyanpasu64’s blog [OLD]" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2021-03-10T00:00:00-08:00" />
+<meta name="twitter:card" content="summary" />
+<meta property="twitter:title" content="ExoTracker Newsletter #2 - Pivoting to SNES, designing an instrument list" />
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"nyanpasu64"},"dateModified":"2021-03-10T00:00:00-08:00","datePublished":"2021-03-10T00:00:00-08:00","description":"For those of you who aren’t already aware, ExoTracker is a tracker-like composing tool, based around subdividing beats instead of integer rows. This allows the user to place notes at arbitrary fractions of a beat (like sheet music), and additionally allows tracker-like delay effects (which can be negative, which is impossible in most trackers). Beat subdivision allows for mixing eighth notes and triplets, and using beats for timing (rather than rows) could make tempo calculation more intuitive than other trackers.","headline":"ExoTracker Newsletter #2 - Pivoting to SNES, designing an instrument list","mainEntityOfPage":{"@type":"WebPage","@id":"https://nyanpasu64.github.io/blog/exotracker-newsletter-2-pivoting-to-snes/"},"url":"https://nyanpasu64.github.io/blog/exotracker-newsletter-2-pivoting-to-snes/"}</script>
+<!-- End Jekyll SEO tag -->
+<link rel="stylesheet" href="/assets/main.css"><link type="application/atom+xml" rel="alternate" href="https://nyanpasu64.github.io/feed.xml" title="nyanpasu64's blog [OLD]" /></head>
+<body><header class="site-header" role="banner">
+
+  <div class="wrapper"><a class="site-title" rel="author" href="/">nyanpasu64&#39;s blog [OLD]</a><nav class="site-nav">
+        <input type="checkbox" id="nav-trigger" class="nav-trigger" />
+        <label for="nav-trigger">
+          <span class="menu-icon">
+            <svg viewBox="0 0 18 15" width="18px" height="15px">
+              <path d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.032C17.335,0,18,0.665,18,1.484L18,1.484z M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.032C17.335,6.031,18,6.696,18,7.516L18,7.516z M18,13.516C18,14.335,17.335,15,16.516,15H1.484 C0.665,15,0,14.335,0,13.516l0,0c0-0.82,0.665-1.483,1.484-1.483h15.032C17.335,12.031,18,12.695,18,13.516L18,13.516z"/>
+            </svg>
+          </span>
+        </label>
+
+        <div class="trigger">
+          <a class="page-link" href="https://nyanpasu64.gitlab.io/blog/exotracker-newsletter-2-pivoting-to-snes/">New site</a>
+        </div>
+      </nav></div>
+</header>
+<main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+
+  <header class="post-header">
+    <h1 class="post-title p-name" itemprop="name headline">ExoTracker Newsletter #2 - Pivoting to SNES, designing an instrument list</h1>
+    <p class="post-meta">
+      <time class="dt-published" datetime="2021-03-10T00:00:00-08:00" itemprop="datePublished">Mar 10, 2021
+      </time></p>
+      <a class="page-link" href="https://nyanpasu64.gitlab.io/blog/exotracker-newsletter-2-pivoting-to-snes/">This site has moved!</a>
+  </header>
+
+  <div class="post-content e-content" itemprop="articleBody">
+    <p>For those of you who aren’t already aware, ExoTracker is a tracker-like composing tool, based around subdividing beats instead of integer rows. This allows the user to place notes at arbitrary fractions of a beat (like sheet music), and additionally allows tracker-like delay effects (which can be negative, which is impossible in most trackers). Beat subdivision allows for mixing eighth notes and triplets, and using beats for timing (rather than rows) could make tempo calculation more intuitive than other trackers.</p>
+
+<h2 id="pivoting-to-a-snes-tracker">Pivoting to a SNES tracker</h2>
+
+<p>After spending several months away from ExoTracker, I’ve decided to switch away from emulating a Famicom with expansions, to a SNES’s SPC700 sound chip. I chose to do this because the SNES has less pre-existing options for composing (especially if you limit yourself to free options, ruling out chipsynth SFC and somewhat SNES Tracker). Another benefit is that it’s simpler to write a SNES sound engine; the SNES only has 1 type of channel, so I don’t need to find a way to modularize/abstract the sound driver to reuse instrument code for the Famicom’s numerous expansion chips, which have different register addresses, sizes, and interpretations (pitch: period vs frequency vs Yamaha, volume: linear vs. log vs. hardware envelopes).</p>
+
+<p>Issue is, I haven’t decided how to handle timing… On the NES, the vblank interrupt is the most processor-efficient way to tick the audio engine, and you normally run one tick per vblank. But (to the best of my understanding) the S-SMP (CPU) has 1 fast and 2 slow timers (with configurable dividers), and they don’t interrupt the S-SMP, so you need to busy-wait and poll them manually. And some SNES games change the timer speed to adjust song tempo (so each quarter note is a fixed number of timer ticks like MIDI). Others have unchanging timer speeds and let an uneven number of timer ticks pass between each subsequent quarter note (like FamiTracker’s tempo).</p>
+
+<p>Looking at how pre-existing trackers behave, FamiTracker allows users to configure Speed and Tempo, which interact strangely<sup id="fnref:1" role="doc-noteref"><a href="#fn:1" class="footnote" rel="footnote">1</a></sup>. 0CC-FT adds more modes: “fixed” to turn off Tempo so Speed controls “ticks/row” directly, and grooves to switch Speed on every row.</p>
+
+<p>OpenMPT has <a href="https://wiki.openmpt.org/Manual:_Song_Properties#Overview">3 tempo modes</a> comprising 2 conceptually different types: Classic/Alternative let users pick the duration of rows, whereas Modern lets users pick the duration of beats. Both come with customizable “ticks/second” (which is fixed in FamiTracker), and Classic/Alternative (but not Modern) suffer from tempo rounding errors. Since ExoTracker doesn’t have rows (but instead arbitrary beat subdivisions), copying Classic/Alternative is not an option, and only copying Modern is.</p>
+
+<p>I’m going to use a SPC700 emulation core (likely Blargg’s). I think only the S-SMP can read the SPC700’s timers… but I probably won’t write S-SMP code, but instead will reimplement the driver in C++, using native x86 instructions to communicate with the GUI and S-DSP emulator, so I’ll have to simulate the timers myself. Anyway I need to pick whether to use the fast or slow timer (probably copy existing games), what GUI to provide for customizing the timer rate (either expose the raw register value, or a tempo which gets converted/rounded to a divider register),  and what tempo mode to use (fixed-timer/FamiTracker tempo, vs variable-timer/MIDI/OpenMPT Modern) since it’s impractical to implement multiple tempo modes in the C++ and ASM drivers.</p>
+
+<h2 id="designing-an-instrument-list">Designing an instrument list</h2>
+
+<p>There is no instrument editor, and I don’t know when there will be one. In the meantime I’ve been working on adding an instrument list.</p>
+
+<figure class="image">
+  <img srcset="instrument-list.png 1.25x" src="instrument-list.png" alt="I added an instrument list widget. The instruments form columns, just like FamiTracker's instrument list. Unlike FamiTracker, it shows all 128 instrument slots, even though most of them are empty. It's confusing to look at." />
+  <figcaption>I added an instrument list widget. The instruments form columns, just like FamiTracker's instrument list. Unlike FamiTracker, it shows all 128 instrument slots, even though most of them are empty. It's confusing to look at.</figcaption>
+</figure>
+
+<p>So looking at this picture, obviously it needs improvement. Aside from showing dozens of empty slots, another difference from FamiTracker is that each column has its own width, instead of matching the width of the widest instrument in any column. I’m not sure if that’s a good or bad thing, or if the Qt GUI library allows me to change it.</p>
+
+<p>One solution is to copy how FamiTracker only shows occupied instrument slots. Implementing will take work, because you need to filter the array of numbered instruments and only expose the slots with instruments, and when a user clicks an item, map from the item’s position in the widget back to instrument numbers. One approach is to keep a cached vector of items, each one holding an instrument number that’s guaranteed to point to a non-empty instrument, and regenerate this vector whenever the document is modified.</p>
+
+<h3 id="missing-functionality-in-famitracker">Missing functionality in FamiTracker</h3>
+
+<p>Unfortunately FamiTracker’s instrument drag-and-drop behavior leaves features to be desired. FamiTracker defines drag-and-drop to swap instruments (and not empty slots). But sometimes I want to move an instrument into an empty slot, which is not possible (unless you fill empty slots with placeholder instruments). And sometimes I want to insert, remove, or move instruments, which shifts all instrument numbers afterwards by 1. (In some cases, this may even include empty slots as well, which may or may not be desirable.) This is not possible in FamiTracker unless you drag each instrument over one by one, which is tedious.</p>
+
+<figure class="image">
+  <img src="famitracker-instrument-groups.png" alt="At 96 DPI, FamiTracker's instruments are grouped into 8-instrument columns. Each has the same leading digit, and each leading digit is split into exactly 2 columns." />
+  <figcaption>At 96 DPI, FamiTracker's instruments are grouped into 8-instrument columns. Each has the same leading digit, and each leading digit is split into exactly 2 columns.</figcaption>
+</figure>
+
+<p>I also like to categorize instruments into percussion, melodic, and expansion chip instruments, then divide them into groups of 8. This is because in FamiTracker, the instrument list is rendered as groups of 8 instruments. However since FamiTracker does not render empty instrument slots, this requires creating empty instruments to fill in any gaps in the numbering scheme.
+<!-- I also use empty instruments in FamiTracker to group instruments. In FamiTracker, there's 8 instruments in each column, so i can organize them in groups of 8. However this requires creating empty instruments in between. -->
+<!-- Another benefit of placeholder instruments (or showing empty slots) is for grouping instruments.  --></p>
+
+<p>(Sidenote: If the list widget isn’t exactly 8 instruments tall, this grouping system breaks, and the instruments are no longer arranged in visually neat columns corresponding 0x0 through 0x7 and 0x8 through 0xf.)</p>
+
+<figure class="image">
+  <img srcset="famitracker-instrument-groups-125.png 1.25x" src="famitracker-instrument-groups-125.png" alt="Unfortunately at 120 DPI, FamiTracker's instrument list is 9 instruments tall rather than 8 (due to rounding differences), breaking the groups. At 192 DPI, the list is 10 instruments tall!" />
+  <figcaption>Unfortunately at 120 DPI, FamiTracker's instrument list is 9 instruments tall rather than 8 (due to rounding differences), breaking the groups. At 192 DPI, the list is 10 instruments tall!</figcaption>
+</figure>
+
+<h3 id="solution-showing-placeholders">Solution: showing placeholders?</h3>
+
+<p>One possibility is providing a user option to show all instruments, including placeholders, from zero until the last occupied instrument slot. You can create or delete instruments in-place (filling or creating an empty slot), drag-and-drop to swap slots (both empty and full), and even insert, delete, or move instruments while shifting the rest forwards or backwards.</p>
+
+<p>If you want to create or insert instruments past the largest-numbered slot, you’ll have to check a box to show all slots, even unoccupied ones. This will look ugly if empty columns are very narrow, but will look less ugly if all columns are the same width.</p>
+
+<p>Unfortunately this solution doesn’t have the same properties as the “empty-named instruments” I’ve been using in FamiTracker, requiring users to adjust. If you’re using empty-but-shown instrument slots (instead of empty-named instruments as in FamiTracker), then pressing the “New Instrument” button won’t append an instrument to the end of the list (after all the empty-name instruments), but will instead fill the first empty slot.</p>
+
+<h3 id="another-approach-openmpt">Another approach: OpenMPT</h3>
+
+<p>OpenMPT has a tree view on the left of the window, showing a list of numbered samples, and (in many module formats) a list of numbered instruments. The numbers are integers starting from 1, unlike FamiTracker’s hex values starting from 00. OpenMPT behaves like a dynamic-size list of samples/instruments which may have empty names and no data. Contrast this with my previous idea of a fixed-size list of instruments, where each may be absent.</p>
+
+<p>I’ve run some testing in a .mptm file on OpenMPT 1.29.07. It seems simple at first, but gets weirder the further you investigate.</p>
+
+<ul>
+  <li>Right-clicking any sample/instrument and clicking “Insert Sample” or “Insert Instrument” will insert one <em>after</em> the one you’ve clicked, increasing the number of each subsequent sample/instrument by 1.
+    <ul>
+      <li>This makes sense under my proposed instrument scheme, and is not possible in FamiTracker.</li>
+    </ul>
+  </li>
+  <li>Inserting a sample/instrument at the very end of the list will create a blank sample/instrument (with a dimmed icon) at the end of the list. This can be repeated to add multiple blank samples/instruments.
+    <ul>
+      <li>This shows that OpenMPT displays (and probably stores) the sample/instrument lists with a variable “length” field. This functions quite differently than my proposed “show trailing placeholders” checkbox, and I suspect OpenMPT’s UI is better. OpenMPT makes it easier to append instruments, whereas my code makes it easier to insert instruments at large indices without filling the space before it.</li>
+      <li>I’m concerned that copying OpenMPT’s approach can lead to bugs. If my code stores instruments in a dynamic-length vector, it’s easy to index out of bounds (which can be avoided if I use custom getter functions that treat out-of-bounds indices as “no instrument present”). If my code stores instruments in a fixed-size array with a cosmetic length field (whether saved in the module or not), I can accidentally set a length shorter than the index of the largest instrument present + 1.</li>
+    </ul>
+  </li>
+  <li>Right-clicking any sample/instrument and clicking “Delete Sample/Instrument” replaces it with an empty slot (with a dimmed icon), and does not shift future instruments/samples back by 1 to fill the hole generated. The exception is deleting the last sample/instrument, which will decrease the list’s length by 1 and not leave behind an empty slot.
+    <ul>
+      <li>It would be nice to have a way to delete full/empty slots and shift everything backwards by 1.</li>
+    </ul>
+  </li>
+</ul>
+
+<p>Samples have strange behavior:</p>
+
+<ul>
+  <li>Samples with no wave data have dimmed icons. This doesn’t mean much.</li>
+  <li>Opening the Samples tab and clicking the Insert Sample button (not to be confused with the Insert Sample right-click menu item) will <em>sometimes</em> insert one at the end of the list of visible samples… and <em>other times</em> overwrite samples with no name and no sample data (created by “Insert Sample” or “Delete Sample”) (and only insert a new sample if none exist). The resulting sample will be called <code class="language-plaintext highlighter-rouge">untitled</code>, and because of the non-empty name, cannot be overwritten or deleted.
+    <ul>
+      <li>Bizzare.</li>
+    </ul>
+  </li>
+  <li>Deleting any sample will delete all trailing “empty” samples (no name <em>and</em> no waveform). The only exception is if all samples in a module are empty, in which case it leaves one behind (all modules have at least 1 sample, and OpenMPT will never delete the last sample).</li>
+</ul>
+
+<p>Instruments have a different set of strange behavior:</p>
+
+<ul>
+  <li>Instruments which have just been deleted have dimmed icons. The “Insert Instrument” <em>button</em> will insert an instrument into the first dimmed instrument, and append a new one if none exist. Changing any property of a deleted/dimmed instrument (name, contents) will undim its icon permanently (until deleted again). The “Insert Instrument” <em>menu item</em> will undim <em>all</em> icons.
+    <ul>
+      <li>So much for consistency.</li>
+    </ul>
+  </li>
+  <li>Trying to delete an instrument slot does nothing if it’s dimmed.</li>
+  <li>Deleting any instrument does not clear trailing empty instruments. Deleting the last instrument shrinks the list by 1 instead of dimming the last instrument, but if the second-last instrument was dimmed, it turns into the last instrument and remain dimmed. In this scenario, you cannot shrink the list any further; the Delete key does nothing, and the right-click menu does nothing. The only solution is to undim the icons and then delete them.</li>
+</ul>
+
+<h3 id="sidenote-openmpt-bugs">Sidenote: OpenMPT bugs</h3>
+
+<p>In the sidebar, click a sample. Click again (opens a rename field with time delay) and rapidly press Delete before the rename is initiated. The rename will pop up after the delete dialog appears. Clicking Yes to delete will delete the instrument, but keep the rename field open.</p>
+
+<p>I’ve gotten OpenMPT to omit a number in the sidebar’s sample/instrument numbering scheme (probably samples, forgot), after messing with it. It reappeared when I pressed F5 (which began playback).</p>
+
+<h2 id="footnotes">Footnotes</h2>
+<div class="footnotes" role="doc-endnotes">
+  <ol>
+    <li id="fn:1" role="doc-endnote">
+      <p>In FamiTracker:</p>
+
+      <ul>
+        <li>Tempo only matches “beats/min” if Speed * “Highlight 1” = 24.</li>
+        <li>Speed only matches “ticks/row” if Tempo = “ticks/second” * 2.5.</li>
+        <li>Speed defaults to 6 “ticks/row”. Highlight 1 defaults to 4 rows/beat. Tempo defaults to 150 “beats/min”. Ticks/second defaults to 60 (or 50 on PAL) because ticks are usually triggered by vblanks/frames.</li>
+      </ul>
+      <p><a href="#fnref:1" class="reversefootnote" role="doc-backlink">&#8617;</a></p>
+    </li>
+  </ol>
+</div>
+
+  </div>
+
+  <script src="https://utteranc.es/client.js"
+        repo="nyanpasu64/nyanpasu64.github.io"
+        issue-term="pathname"
+        theme="github-light"
+        crossorigin="anonymous"
+        async>
+</script>
+
+
+  <a class="u-url" href="/blog/exotracker-newsletter-2-pivoting-to-snes/" hidden></a>
+</article>
+
+      </div>
+    </main><footer class="site-footer h-card">
+  <data class="u-url" href="/"></data>
+
+  <div class="wrapper">
+
+    <!-- <h2 class="footer-heading">nyanpasu64&#39;s blog [OLD]</h2> -->
+
+    <div class="footer-col-wrapper">
+      <div class="footer-col footer-col-1">
+        <ul class="contact-list">
+          <li class="p-name">
+            nyanpasu64&#39;s blog [OLD]
+          </li>
+        </ul>
+      </div>
+
+      <div class="footer-col footer-col-2"><ul class="social-media-list"><li><a href="https://github.com/nyanpasu64"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#github"></use></svg> <span class="username">nyanpasu64</span></a></li><li><a href="https://write.as/nyanpasu64"><span class="username">My microblog</span></a></li>
+</ul>
+</div>
+
+      <div class="footer-col footer-col-3">
+        <p>Adventures in programming, DSP, and chiptune</p>
+      </div>
+    </div>
+
+  </div>
+
+</footer>
+</body>
+
+</html>

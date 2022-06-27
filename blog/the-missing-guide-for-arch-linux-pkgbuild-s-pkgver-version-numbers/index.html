@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.8.0 -->
+<title>The missing guide for Arch Linux PKGBUILD’s pkgver() version numbers | nyanpasu64’s blog [OLD]</title>
+<meta name="generator" content="Jekyll v3.9.2" />
+<meta property="og:title" content="The missing guide for Arch Linux PKGBUILD’s pkgver() version numbers" />
+<meta name="author" content="nyanpasu64" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="Pacman’s version comparison algorithm was designed over a decade ago to properly sort many categories of real-world version numbers, and is now set in stone, quirks and all. Later on, the AUR developed pkgver() conventions and templates which turn Git commits into version numbers that would sort properly in Pacman. But what are Pacman’s requirements for sorting real-world version numbers, how does Pacman’s version comparison algorithm work, and how are AUR pkgver() built around the algorithm?" />
+<meta property="og:description" content="Pacman’s version comparison algorithm was designed over a decade ago to properly sort many categories of real-world version numbers, and is now set in stone, quirks and all. Later on, the AUR developed pkgver() conventions and templates which turn Git commits into version numbers that would sort properly in Pacman. But what are Pacman’s requirements for sorting real-world version numbers, how does Pacman’s version comparison algorithm work, and how are AUR pkgver() built around the algorithm?" />
+<link rel="canonical" href="https://nyanpasu64.gitlab.io/blog/the-missing-guide-for-arch-linux-pkgbuild-s-pkgver-version-numbers/" />
+<meta property="og:url" content="https://nyanpasu64.gitlab.io/blog/the-missing-guide-for-arch-linux-pkgbuild-s-pkgver-version-numbers/" />
+<meta property="og:site_name" content="nyanpasu64’s blog [OLD]" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2021-08-13T07:21:00-07:00" />
+<meta name="twitter:card" content="summary" />
+<meta property="twitter:title" content="The missing guide for Arch Linux PKGBUILD’s pkgver() version numbers" />
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"nyanpasu64"},"dateModified":"2021-08-13T07:21:00-07:00","datePublished":"2021-08-13T07:21:00-07:00","description":"Pacman’s version comparison algorithm was designed over a decade ago to properly sort many categories of real-world version numbers, and is now set in stone, quirks and all. Later on, the AUR developed pkgver() conventions and templates which turn Git commits into version numbers that would sort properly in Pacman. But what are Pacman’s requirements for sorting real-world version numbers, how does Pacman’s version comparison algorithm work, and how are AUR pkgver() built around the algorithm?","headline":"The missing guide for Arch Linux PKGBUILD’s pkgver() version numbers","mainEntityOfPage":{"@type":"WebPage","@id":"https://nyanpasu64.github.io/blog/the-missing-guide-for-arch-linux-pkgbuild-s-pkgver-version-numbers/"},"url":"https://nyanpasu64.github.io/blog/the-missing-guide-for-arch-linux-pkgbuild-s-pkgver-version-numbers/"}</script>
+<!-- End Jekyll SEO tag -->
+<link rel="stylesheet" href="/assets/main.css"><link type="application/atom+xml" rel="alternate" href="https://nyanpasu64.github.io/feed.xml" title="nyanpasu64's blog [OLD]" /></head>
+<body><header class="site-header" role="banner">
+
+  <div class="wrapper"><a class="site-title" rel="author" href="/">nyanpasu64&#39;s blog [OLD]</a><nav class="site-nav">
+        <input type="checkbox" id="nav-trigger" class="nav-trigger" />
+        <label for="nav-trigger">
+          <span class="menu-icon">
+            <svg viewBox="0 0 18 15" width="18px" height="15px">
+              <path d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.032C17.335,0,18,0.665,18,1.484L18,1.484z M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.032C17.335,6.031,18,6.696,18,7.516L18,7.516z M18,13.516C18,14.335,17.335,15,16.516,15H1.484 C0.665,15,0,14.335,0,13.516l0,0c0-0.82,0.665-1.483,1.484-1.483h15.032C17.335,12.031,18,12.695,18,13.516L18,13.516z"/>
+            </svg>
+          </span>
+        </label>
+
+        <div class="trigger">
+          <a class="page-link" href="https://nyanpasu64.gitlab.io/blog/the-missing-guide-for-arch-linux-pkgbuild-s-pkgver-version-numbers/">New site</a>
+        </div>
+      </nav></div>
+</header>
+<main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+
+  <header class="post-header">
+    <h1 class="post-title p-name" itemprop="name headline">The missing guide for Arch Linux PKGBUILD&#39;s pkgver() version numbers</h1>
+    <p class="post-meta">
+      <time class="dt-published" datetime="2021-08-13T07:21:00-07:00" itemprop="datePublished">Aug 13, 2021
+      </time></p>
+      <a class="page-link" href="https://nyanpasu64.gitlab.io/blog/the-missing-guide-for-arch-linux-pkgbuild-s-pkgver-version-numbers/">This site has moved!</a>
+  </header>
+
+  <div class="post-content e-content" itemprop="articleBody">
+    <p>Pacman’s version comparison algorithm was designed over a decade ago to properly sort many categories of real-world version numbers, and is now set in stone, quirks and all. Later on, the AUR developed <code class="language-plaintext highlighter-rouge">pkgver()</code> conventions and templates which turn Git commits into version numbers that would sort properly in Pacman. But what are Pacman’s requirements for sorting real-world version numbers, how does Pacman’s version comparison algorithm work, and how are AUR <code class="language-plaintext highlighter-rouge">pkgver()</code> built around the algorithm?</p>
+
+<h1 id="how-pacman-compares-versions">How Pacman compares versions</h1>
+
+<p><code class="language-plaintext highlighter-rouge">vercmp</code> is a command-line utility which takes two string arguments and compares them using Pacman’s version comparison algorithm.</p>
+
+<p>The <code class="language-plaintext highlighter-rouge">vercmp</code> executable exposes the algorithm used by Pacman to determine whether a different package version is newer than what you have currently installed. Sadly, https://man.archlinux.org/man/vercmp.8 (as well as the pacman manpage) is inadequate and fails to explain the algorithm, only providing a few examples.</p>
+
+<h2 id="requirements-for-comparing-versions">Requirements for comparing versions</h2>
+
+<p>Pacman needs to compare the versions of real-world software programs and its own conventions correctly:</p>
+
+<ul>
+  <li>1.0-beta &lt; 1.0 (from semver)
+    <ul>
+      <li>pacman and vercmp fail to fulfill this requirement, because it interprets <code class="language-plaintext highlighter-rouge">-beta</code> as build metadata (see <code class="language-plaintext highlighter-rouge">parseEVR()</code> <code class="language-plaintext highlighter-rouge">-release</code>).</li>
+    </ul>
+  </li>
+  <li>1.0beta &lt; 1.0 (Arch labels pre-release packages as 1.0beta rather than 1.0-beta)</li>
+  <li>1.0 &lt; 1.0.1</li>
+  <li>1.0.1 &lt; 1.0.2</li>
+</ul>
+
+<p>Pacman’s version comparison algorithm also has incidental properties that I don’t consider to be first principles. However, AUR <code class="language-plaintext highlighter-rouge">pkgver()</code> depend on certain ones to generate unusual-looking unintuitive version numbers that nonetheless sort properly in Pacman.</p>
+
+<ul>
+  <li>1.0 &lt; 1.0.0 (I think they should be equal)</li>
+  <li>alpha &lt; beta &lt; 1.0</li>
+  <li>1.0 &lt; 1.0.alpha (it’s strange that 1.0 &lt; 1.0.alpha &lt; 1.0.0)</li>
+  <li>1.0.alpha &lt; 1.0.0</li>
+  <li>1.0.alpha &lt; 1.0.1</li>
+</ul>
+
+<h2 id="algorithm-implementation">Algorithm implementation</h2>
+
+<p>The algorithm is implemented in <code class="language-plaintext highlighter-rouge">alpm_pkg_vercmp()</code> in the Pacman source code (<a href="https://gitlab.archlinux.org/pacman/pacman/-/blob/master/lib/libalpm/version.c"><code class="language-plaintext highlighter-rouge">:lib/libalpm/version.c</code></a>). The file is 260 lines of code, with multiple functions dedicated to different aspects of version comparison. The algorithm is written in raw C, with <em>glorious</em> null-terminated strings, and string slicing implemented via <code class="language-plaintext highlighter-rouge">const</code>-incompatible null byte insertion. 😿</p>
+
+<h3 id="epoch-version-and-release">Epoch, version, and release</h3>
+
+<p><code class="language-plaintext highlighter-rouge">parseEVR()</code> parses Arch package versions using the format <code class="language-plaintext highlighter-rouge">[epoch:]version[-release]</code>. More specifically, all characters after the last hyphen form the release (even if there are colons afterwards), and the epoch is “0” unless the first non-digit is a colon. If no epoch is present, the epoch is labeled as 0.</p>
+
+<p><code class="language-plaintext highlighter-rouge">parseEVR()</code> allows only numbers in the epoch field. It is usually absent, but can be used as a “major version” to ensure that newer program versions compare higher, even if the newer program’s version number (stored in the version field) is <em>lower</em> than in older versions.</p>
+
+<p>The release field is an optional location for “build metadata”. A version with no release field is considered equal to otherwise-identical versions with any release field, but two otherwise-identical versions with different release fields use the release field to break ties.</p>
+
+<h3 id="comparing-versions">Comparing versions</h3>
+
+<p>Each field is then compared using <code class="language-plaintext highlighter-rouge">rpmvercmp()</code>. Missing epochs are assumed to be 0, and missing releases are assumed to be equal to any numbered release.</p>
+
+<p><code class="language-plaintext highlighter-rouge">rpmvercmp()</code> decomposes its input into “segments”, where each segment starts with 0 or more “separator” characters (any non-alphanumeric character), which are followed by 1 or more “body” characters (each body contains either alphabetic characters or numeric characters, so “1a” is 2 segments). The input may be terminated by a “dangling” segment with only separator characters and no body (but realistic version numbers will not have a dangling segment).</p>
+
+<p>This can be modeled as the regex <code class="language-plaintext highlighter-rouge">([^a-zA-Z0-9]* ([a-zA-Z]+ | [0-9]+) )* [^a-zA-Z0-9]*</code> more or less.</p>
+
+<p>Both inputs are split into segments (including dangling segments), starting at the beginning. The algorithm loops over segments from both inputs, starting with the first segment from each, until either input runs out of segments entirely (one or both segments are absent).</p>
+
+<p>Each loop iteration receives one segment from each version, for as long as both versions have segments remaining:</p>
+
+<ul>
+  <li>All leading separators are trimmed off both segments. Results:
+    <ul>
+      <li>1.1 = 1_1</li>
+    </ul>
+  </li>
+  <li>If either segment is empty after trimming separators (because it’s a dangling segment), the loop breaks.</li>
+  <li>If one segment started with more separator characters, it’s a larger version. Note that the Pacman developers believe that realistic version numbers do not have multiple separator characters in a row, and Pacman isn’t designed to handle this situation perfectly. Results:
+    <ul>
+      <li>1 &lt; .1 = _1 &lt; ..1</li>
+      <li>1.1 &lt; 1..1</li>
+      <li>1.a &lt; 1..a</li>
+      <li>1rev &lt; 1.rev &lt; 1..rev</li>
+      <li>a10 &lt; a.10</li>
+    </ul>
+  </li>
+  <li>Alphabetic segments are sorted lexicographically, and sort before numeric segments (sorted numerically). Results:
+    <ul>
+      <li>a &lt; aa &lt; z &lt; zz &lt; 1 = 01 &lt; 9 &lt; 10</li>
+    </ul>
+  </li>
+</ul>
+
+<p>The function returns immediately if the loop finds a pair of segments that compare unequal. Otherwise the loop stops (without stripping separators) when one or both inputs reach the end of line, or breaks (after stripping separators) when one or both inputs reach a final dangling segment.</p>
+
+<p>At this point, one of these is true:</p>
+
+<ul>
+  <li>at least one version has no segment.</li>
+  <li>no versions have missing segments, but at least one version has a dangling segment (causing both segments to be stripped, so at least one version <em>now</em> has no segment).</li>
+</ul>
+
+<p>The segments are compared as follows:</p>
+
+<ul>
+  <li>none = none</li>
+  <li>none &gt; alpha</li>
+  <li>none &lt; separator or number</li>
+  <li>alpha &lt; none</li>
+  <li>separator or number &gt; none</li>
+</ul>
+
+<p>The algorithm is complete.</p>
+
+<p>All dangling segments compare equal to one another, but come after “segment with text” and “no segment” and before “segment with number”.</p>
+
+<ul>
+  <li>
+    <p>1a &lt; 1 &lt; 1.a &lt; 1. = 1.. &lt; 1.0</p>
+  </li>
+  <li>’’ &lt; ‘.’ = ‘..’</li>
+  <li>1 &lt; 1. = 1_ = 1..</li>
+</ul>
+
+<p>Unfortunately this algorithm has a cycle, caused by how more leading separators wins a version comparison (even if followed by a losing body) if both segments have bodies, but gets ignored if one or both segments are empty after trimming.</p>
+
+<ul>
+  <li>1.0 &lt; 1..a (more leading separators wins since both segments have bodies)</li>
+  <li>1..a &lt; 1. (leading separators ignored since 1. is empty after trimming, ‘a’ &lt; ‘’)</li>
+  <li>
+    <ol>
+      <li>&lt; 1.0 (leading separators ignored since 1. is empty after trimming, ‘’ &lt; ‘1’)</li>
+    </ol>
+  </li>
+</ul>
+
+<p>Note that 1. and 1… are interchangeable, because the dangling separators get stripped out either way.</p>
+
+<p>The Pacman developers commented, “Fun example :) Like I said, having multiple delimiters in a row doesn’t make a lot of sense, so that is pretty much undefined behaviour”</p>
+
+<h2 id="testing-the-requirements">Testing the requirements</h2>
+
+<p>Dangling segments and multiple separators don’t occur in real-world version numbers and can be ignored. Does this algorithm properly order real-world versions?</p>
+
+<ul>
+  <li>1.0beta &lt; 1.0</li>
+</ul>
+
+<p>Yes, “beta” &lt; “”.</p>
+
+<ul>
+  <li>1.0 &lt; 1.0.1</li>
+</ul>
+
+<p>Yes, “” &lt; “.1”.</p>
+
+<ul>
+  <li>1.0.1 &lt; 1.0.2</li>
+</ul>
+
+<p>Yes, “.1” &lt; “.2”.</p>
+
+<ul>
+  <li>1.0 &lt; 1.0.alpha</li>
+</ul>
+
+<p>Yes, “” &lt; “.alpha”</p>
+
+<h1 id="what-is-pkgbuild-and-pkgver">What is PKGBUILD and <code class="language-plaintext highlighter-rouge">pkgver</code>?</h1>
+
+<p>PKGBUILD files are shell scripts defining variables and functions used by <code class="language-plaintext highlighter-rouge">makepkg</code> to build a binary package. The <code class="language-plaintext highlighter-rouge">pkgver</code> variable serves as the version number of the PKGBUILD and the package produced. All PKGBUILD files contain a <code class="language-plaintext highlighter-rouge">pkgver</code> variable, storing the package’s version at the time the file was written. However, this is insufficient for VCS/<code class="language-plaintext highlighter-rouge">-git</code> packages tracking the latest commit in a Git repository, where the version of software built by a PKGBUILD can change even when the PKGBUILD does not. To accommodate this, <code class="language-plaintext highlighter-rouge">makepkg</code> also supports a <code class="language-plaintext highlighter-rouge">pkgver()</code> function, which when run produces the <em>current</em> version of the package.</p>
+
+<p>If <code class="language-plaintext highlighter-rouge">pkgver</code> is a variable only, then an unmodified PKGBUILD and <code class="language-plaintext highlighter-rouge">pkgver</code> means the package has not been updated. But if a <code class="language-plaintext highlighter-rouge">pkgver()</code> function is present, then an AUR helper trying to determine if an installed package is outdated must re-clone/pull the VCS repo listed in <code class="language-plaintext highlighter-rouge">source=(...)</code> and call <code class="language-plaintext highlighter-rouge">pkgver()</code> again, even if the PKGBUILD and <code class="language-plaintext highlighter-rouge">pkgver</code> are unmodified.</p>
+
+<p>If a <code class="language-plaintext highlighter-rouge">pkgver()</code> function is present, then running <code class="language-plaintext highlighter-rouge">makepkg</code> to build the PKGBUILD into a binary package also rewrites the PKGBUILD file with a <em>new</em> value for the <code class="language-plaintext highlighter-rouge">pkgver</code> variable. A few fixed-version packages like <a href="https://github.com/archlinux/svntogit-packages/blob/master/qt5-base/trunk/PKGBUILD">qt5-base</a> and <a href="https://github.com/archlinux/svntogit-packages/blob/master/qt5-wayland/trunk/PKGBUILD">qt5-wayland</a> use this property by defining a <code class="language-plaintext highlighter-rouge">pkgver()</code> function to automatically recompute complex version numbers. Unlike <code class="language-plaintext highlighter-rouge">-git</code> packages in the AUR, these PKGBUILDs build a fixed version of the source code, and their <code class="language-plaintext highlighter-rouge">pkgver()</code> functions return a fixed value.</p>
+
+<h1 id="building-a-pkgver-so-pacman-sorts-git-repositories-correctly">Building a <code class="language-plaintext highlighter-rouge">pkgver()</code> so Pacman sorts Git repositories correctly</h1>
+
+<p>Git repositories in the wild have a lot of variance; some don’t have tags, some have tags that sort properly, and some have tags in the wrong order. And some repositories start with no tags, but create tags later on when they make their first release.</p>
+
+<h2 id="requirements-for-comparing-versions-1">Requirements for comparing versions</h2>
+
+<p>What are the requirements for generating version numbers from a Git repository?</p>
+
+<ul>
+  <li>As a repository without tags creates more commits, the version number should increase.</li>
+  <li>When a repository creates its first release/tag, the version number should increase.</li>
+  <li>As a repository with tags creates more commits, the version number should increase.</li>
+  <li>If the most recent tag changes from 1.0 to 1.1, the version number should increase.</li>
+  <li>If the most recent tag changes from 1.0 to 1.0.1, the version number should increase.</li>
+</ul>
+
+<p>How can we achieve these criteria, given how Pacman works?</p>
+
+<h2 id="arch-wiki-templates">Arch Wiki templates</h2>
+
+<p><a href="https://wiki.archlinux.org/index.php/VCS_package_guidelines#The_pkgver()_function">The Arch wiki</a> provides copy-paste snippets of example pkgver() functions, but fails to explain the underlying concepts (what <code class="language-plaintext highlighter-rouge">git describe</code> outputs, what the sed expression does, how the resulting expression is evaluated by <code class="language-plaintext highlighter-rouge">vercmp</code> and <code class="language-plaintext highlighter-rouge">pacman</code>).</p>
+
+<h3 id="untagged-git-repositories">Untagged Git repositories</h3>
+
+<p>In a Git repo where the history of <code class="language-plaintext highlighter-rouge">master</code> has no tags, the recommended <code class="language-plaintext highlighter-rouge">pkgver()</code> counts commits:</p>
+
+<div class="language-sh highlighter-rouge"><div class="highlight"><pre class="highlight"><code>pkgver<span class="o">()</span> <span class="o">{</span>
+  <span class="nb">cd</span> <span class="s2">"</span><span class="nv">$pkgname</span><span class="s2">"</span>
+  <span class="nb">printf</span> <span class="s2">"r%s.%s"</span> <span class="s2">"</span><span class="si">$(</span>git rev-list <span class="nt">--count</span> HEAD<span class="si">)</span><span class="s2">"</span> <span class="s2">"</span><span class="si">$(</span>git rev-parse <span class="nt">--short</span> HEAD<span class="si">)</span><span class="s2">"</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+<p>This produces a string <code class="language-plaintext highlighter-rouge">r{number of commits}.{commit hash}</code>.</p>
+
+<p>Any letter would work equally well for the version comparison algorithm, <code class="language-plaintext highlighter-rouge">r</code> was chosen because it sounds like “revision”. But what is the purpose of a letter?</p>
+
+<h3 id="tagged-git-repositories">Tagged Git repositories</h3>
+
+<p>If the repo has tags like 0.2.5 which begin with a number (no leading “v” prefix like v0.2.5), <code class="language-plaintext highlighter-rouge">git describe --long --tags</code> can be used as the root source for the version:</p>
+
+<div class="language-sh highlighter-rouge"><div class="highlight"><pre class="highlight"><code>pkgver<span class="o">()</span> <span class="o">{</span>
+  <span class="nb">cd</span> <span class="s2">"</span><span class="nv">$pkgname</span><span class="s2">"</span>
+  git describe <span class="nt">--long</span> <span class="nt">--tags</span> | <span class="nb">sed</span> <span class="s1">'s/\([^-]*-g\)/r\1/;s/-/./g'</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+<p><code class="language-plaintext highlighter-rouge">git describe --long</code> produces a string with format <code class="language-plaintext highlighter-rouge">{most recent tag}-{commits since tag}-g{commit hash}</code>.</p>
+
+<div class="language-sh highlighter-rouge"><div class="highlight"><pre class="highlight"><code>git checkout master
+git describe <span class="nt">--long</span> <span class="nt">--tags</span>  <span class="c"># v2.4-25-ga240b43</span>
+git checkout v2.4  <span class="c"># or git checkout HEAD~25</span>
+git describe <span class="nt">--long</span> <span class="nt">--tags</span>  <span class="c"># v2.4-0-g51e51f4</span>
+</code></pre></div></div>
+
+<p>The sed expression turns it into <code class="language-plaintext highlighter-rouge">{most recent tag}.r{commits since tag}.g{commit hash}</code>.</p>
+
+<h2 id="testing-the-requirements-1">Testing the requirements</h2>
+
+<ul>
+  <li>As a repository without tags creates more commits, the version number should increase.</li>
+</ul>
+
+<p>“r###” &lt; “r###+1”? Trivially so, as the “r” segment is the same, but the “number of commits” segment increases.</p>
+
+<ul>
+  <li>When a repository creates its first release/tag, the version number should increase.</li>
+</ul>
+
+<p>“r###” &lt; “1.0.r###”? Yes. The version of the untagged repository starts with a “r” segment. The version of the tagged repository starts with a numeric segment (taken from the tag), which comes after.</p>
+
+<ul>
+  <li>As a repository with tags creates more commits, the version number should increase.</li>
+</ul>
+
+<p>“1.0.r###” &lt; “1.0.r###+1”? Yes. “most recent tag” is unchanged, “.r” is unchanged, and “commits since tag” increases.</p>
+
+<ul>
+  <li>If the most recent tag changes from 1.0 to 1.1, the version number should increase.</li>
+</ul>
+
+<p>“1.0.r###” &lt; “1.1.r###”? Yes. “most recent tag” increases.</p>
+
+<ul>
+  <li>If the most recent tag changes from 1.0 to 1.0.1, the version number should increase.</li>
+</ul>
+
+<p>“1.0.r###” &lt; “1.0.1.r###”? Yes. “1”=”1”, “.0”=”.0”, and “.r” &lt; “.1”.</p>
+
+<h3 id="why-not-">Why not “.”?</h3>
+
+<p>If tag-based versions were <code class="language-plaintext highlighter-rouge">{most recent tag}.{commits since tag}...</code>, then if the most recent tag changes from 1.0 to 1.0.1, the version would change from “1.0.###” to “1.0.1.###”, where “.1” sorts <em>before</em> “.###” despite 1.0.1 being a newer program version.</p>
+
+<p>This was first brought up by @diabonas:archlinux.org:</p>
+
+<blockquote>
+  <p>You need it because otherwise 1.0.500 (where 500 is the revision count) would be newer than 1.0.1.30 (again, 30 is the revision count) - this doesn’t happen with 1.0.r500, which is older than 1.0.1.r30 because a letter is always older than a digit</p>
+</blockquote>
+
+<h3 id="why-not-r">Why not “r”?</h3>
+
+<blockquote>
+  <p>It’s 1.0.1.r30 - the dot is important as 1.0.1r30 would be older than 1.0.1, but 1.0.1.r30 is newer - it’s a revision after 1.0.1 after all. And yeah, 1.0r31 is a revision after 1.0, but before the next upstream release 1.0.1, whole 1.0.1.r31 is a revision after 1.0.1, so newer than 1.0.r30</p>
+</blockquote>
+
+<h2 id="the-arch-wiki-is-wrong">The Arch Wiki is wrong</h2>
+
+<p>The Arch wiki’s stated requirements for generating version numbers are:</p>
+
+<blockquote>
+  <p>It is recommended to have following version format: <em>RELEASE.rREVISION</em> where <em>REVISION</em> is a monotonically increasing number that uniquely identifies the source tree (VCS revisions do this).</p>
+</blockquote>
+
+<p>The Arch wiki is wrong; given the “RELEASE.RELEASE.rREVISION” convention recommended by the wiki, for Pacman to properly identify older and newer packages, REVISION does not need to be globally monotonic, only within a given RELEASE. And the Arch wiki even breaks its own rules: the example “Git with tags” <code class="language-plaintext highlighter-rouge">pkgver()</code>’s REVISION is not monotonic except within a given RELEASE (Git tag).</p>
+
+<p>Even if the Arch wiki was changed to say that REVISION needs to be monotonic within a given RELEASE, it states that <code class="language-plaintext highlighter-rouge">0.1.r456 &gt; r454</code> but <code class="language-plaintext highlighter-rouge">0.1.456 &lt; 454</code>, without explaining the algorithm used to compare revisions. This only serves to confuse the reader.</p>
+
+  </div>
+
+  <script src="https://utteranc.es/client.js"
+        repo="nyanpasu64/nyanpasu64.github.io"
+        issue-term="pathname"
+        theme="github-light"
+        crossorigin="anonymous"
+        async>
+</script>
+
+
+  <a class="u-url" href="/blog/the-missing-guide-for-arch-linux-pkgbuild-s-pkgver-version-numbers/" hidden></a>
+</article>
+
+      </div>
+    </main><footer class="site-footer h-card">
+  <data class="u-url" href="/"></data>
+
+  <div class="wrapper">
+
+    <!-- <h2 class="footer-heading">nyanpasu64&#39;s blog [OLD]</h2> -->
+
+    <div class="footer-col-wrapper">
+      <div class="footer-col footer-col-1">
+        <ul class="contact-list">
+          <li class="p-name">
+            nyanpasu64&#39;s blog [OLD]
+          </li>
+        </ul>
+      </div>
+
+      <div class="footer-col footer-col-2"><ul class="social-media-list"><li><a href="https://github.com/nyanpasu64"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#github"></use></svg> <span class="username">nyanpasu64</span></a></li><li><a href="https://write.as/nyanpasu64"><span class="username">My microblog</span></a></li>
+</ul>
+</div>
+
+      <div class="footer-col footer-col-3">
+        <p>Adventures in programming, DSP, and chiptune</p>
+      </div>
+    </div>
+
+  </div>
+
+</footer>
+</body>
+
+</html>

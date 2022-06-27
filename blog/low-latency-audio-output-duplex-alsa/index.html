@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.8.0 -->
+<title>Implementing low-latency shared/exclusive mode audio output/duplex | nyanpasu64’s blog [OLD]</title>
+<meta name="generator" content="Jekyll v3.9.2" />
+<meta property="og:title" content="Implementing low-latency shared/exclusive mode audio output/duplex" />
+<meta name="author" content="nyanpasu64" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="Audio output and duplex is actually quite tricky, and even libraries like RtAudio get it wrong. If you’re writing an app that needs low-latency audio without glitches, the proper implementation architecture differs between apps talking to pull-mode (well-designed, low-latency) mixing daemons, and apps talking to hardware. (I hear push-mode mixing daemons are incompatible with low latency; I discuss this at the end.) This is my best understanding of the problem right now." />
+<meta property="og:description" content="Audio output and duplex is actually quite tricky, and even libraries like RtAudio get it wrong. If you’re writing an app that needs low-latency audio without glitches, the proper implementation architecture differs between apps talking to pull-mode (well-designed, low-latency) mixing daemons, and apps talking to hardware. (I hear push-mode mixing daemons are incompatible with low latency; I discuss this at the end.) This is my best understanding of the problem right now." />
+<link rel="canonical" href="https://nyanpasu64.gitlab.io/blog/low-latency-audio-output-duplex-alsa/" />
+<meta property="og:url" content="https://nyanpasu64.gitlab.io/blog/low-latency-audio-output-duplex-alsa/" />
+<meta property="og:site_name" content="nyanpasu64’s blog [OLD]" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2022-06-14T00:00:00-07:00" />
+<meta name="twitter:card" content="summary" />
+<meta property="twitter:title" content="Implementing low-latency shared/exclusive mode audio output/duplex" />
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"nyanpasu64"},"dateModified":"2022-06-14T00:00:00-07:00","datePublished":"2022-06-14T00:00:00-07:00","description":"Audio output and duplex is actually quite tricky, and even libraries like RtAudio get it wrong. If you’re writing an app that needs low-latency audio without glitches, the proper implementation architecture differs between apps talking to pull-mode (well-designed, low-latency) mixing daemons, and apps talking to hardware. (I hear push-mode mixing daemons are incompatible with low latency; I discuss this at the end.) This is my best understanding of the problem right now.","headline":"Implementing low-latency shared/exclusive mode audio output/duplex","mainEntityOfPage":{"@type":"WebPage","@id":"https://nyanpasu64.github.io/blog/low-latency-audio-output-duplex-alsa/"},"url":"https://nyanpasu64.github.io/blog/low-latency-audio-output-duplex-alsa/"}</script>
+<!-- End Jekyll SEO tag -->
+<link rel="stylesheet" href="/assets/main.css"><link type="application/atom+xml" rel="alternate" href="https://nyanpasu64.github.io/feed.xml" title="nyanpasu64's blog [OLD]" /></head>
+<body><header class="site-header" role="banner">
+
+  <div class="wrapper"><a class="site-title" rel="author" href="/">nyanpasu64&#39;s blog [OLD]</a><nav class="site-nav">
+        <input type="checkbox" id="nav-trigger" class="nav-trigger" />
+        <label for="nav-trigger">
+          <span class="menu-icon">
+            <svg viewBox="0 0 18 15" width="18px" height="15px">
+              <path d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.032C17.335,0,18,0.665,18,1.484L18,1.484z M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.032C17.335,6.031,18,6.696,18,7.516L18,7.516z M18,13.516C18,14.335,17.335,15,16.516,15H1.484 C0.665,15,0,14.335,0,13.516l0,0c0-0.82,0.665-1.483,1.484-1.483h15.032C17.335,12.031,18,12.695,18,13.516L18,13.516z"/>
+            </svg>
+          </span>
+        </label>
+
+        <div class="trigger">
+          <a class="page-link" href="https://nyanpasu64.gitlab.io/blog/low-latency-audio-output-duplex-alsa/">New site</a>
+        </div>
+      </nav></div>
+</header>
+<main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+
+  <header class="post-header">
+    <h1 class="post-title p-name" itemprop="name headline">Implementing low-latency shared/exclusive mode audio output/duplex</h1>
+    <p class="post-meta">
+      <time class="dt-published" datetime="2022-06-14T00:00:00-07:00" itemprop="datePublished">Jun 14, 2022
+      </time></p>
+      <a class="page-link" href="https://nyanpasu64.gitlab.io/blog/low-latency-audio-output-duplex-alsa/">This site has moved!</a>
+  </header>
+
+  <div class="post-content e-content" itemprop="articleBody">
+    <p>Audio output and duplex is actually quite tricky, and even libraries like RtAudio get it wrong. If you’re writing an app that needs low-latency audio without glitches, the proper implementation architecture differs between apps talking to pull-mode (well-designed, low-latency) mixing daemons, and apps talking to hardware. (I hear push-mode mixing daemons are incompatible with low latency; I discuss this at the end.) This is my best understanding of the problem right now.</p>
+
+<h2 id="prior-art">Prior art</h2>
+
+<p>There are some previous resources on implementing ALSA duplex, but I find them to be unclear and/or incomplete:</p>
+
+<ul>
+  <li><a href="https://git.alsa-project.org/?p=alsa-lib.git;a=blob;f=test/latency.c">https://git.alsa-project.org/?p=alsa-lib.git;a=blob;f=test/latency.c</a>; gets the “write silence” part right but doesn’t explain what it’s doing, and the main loop is confusing.</li>
+  <li><a href="https://web.archive.org/web/20211003144458/http://www.saunalahti.fi/~s7l/blog/2005/08/21/Full%20Duplex%20ALSA">https://web.archive.org/web/20211003144458/http://www.saunalahti.fi/~s7l/blog/2005/08/21/Full%20Duplex%20ALSA</a> gets the “write silence” part right, but doesn’t know <em>why</em> it’s necessary.</li>
+  <li><a href="http://equalarea.com/paul/alsa-audio.html#duplexex">http://equalarea.com/paul/alsa-audio.html#duplexex</a> says: “The the interrupt-driven example represents a fundamentally better design for many situations. It is, however, rather complex to extend to full duplex. This is why I suggest you forget about all of this… In a word: JACK.” However this doesn’t answer the question of how <em>JACK</em> itself implements full duplex audio.</li>
+</ul>
+
+<h2 id="alsa-terminology">ALSA terminology</h2>
+
+<p>These are some background terms which are helpful to understand before writing an audio backend.</p>
+
+<p><strong>Sample:</strong> one amplitude in a discrete-time signal, or the time interval between an ADC generating or DAC playing adjacent samples.</p>
+
+<p><strong>Frame:</strong> one sample of time, or one sample across all audio channels.</p>
+
+<p><strong>Period:</strong> Every time the hardware record/play point advances by this many frames, the app is woken up to read or generate audio. In most ALSA apps, the hardware period determines the chunks of audio read, generated, or written.</p>
+
+<p>However you can read and write arbitrary chunks of audio anyway, and query the exact point where the hardware is writing or playing audio at any time, even between periods. For example, PulseAudio and PipeWire’s ALSA backends ignore/disable periods altogether, and instead fetch and play audio based off a variable-interval OS timer loosely synchronized with the hardware’s write and play points.</p>
+
+<ul>
+  <li>PipeWire (timer-based scheduling) experiences extra latency with batch devices (<a href="https://gitlab.freedesktop.org/pipewire/pipewire/-/wikis/FAQ#pipewire-buffering-explained">link</a>), and PulseAudio used to turn off timer-based scheduling for batch devices (<a href="https://www.alsa-project.org/pipermail/alsa-devel/2014-March/073816.html">link</a>).</li>
+  <li>On the other hand, Paul Davis says conventional <em>period-based</em> scheduling struggles <em>more</em> than timer-based (PulseAudio, PipeWire) for batch devices (<a href="https://blog.linuxplumbersconf.org/2009/slides/Paul-Davis-lpc2009.pdf">link</a> @ “The Importance of Timing”). I’m not sure how to reconcile this.</li>
+</ul>
+
+<p><strong>Batch device:</strong> Represented by <code class="language-plaintext highlighter-rouge">SNDRV_PCM_INFO_BATCH</code> in the Linux kernel. I’m not exactly sure what it means. <a href="https://www.alsa-project.org/pipermail/alsa-devel/2014-March/073816.html">https://www.alsa-project.org/pipermail/alsa-devel/2014-March/073816.html</a> says it’s a device where audio can only be sent to the device in period-sized chunks. <a href="https://www.alsa-project.org/pipermail/alsa-devel/2015-June/094037.html">https://www.alsa-project.org/pipermail/alsa-devel/2015-June/094037.html</a> is too complicated for me to understand.</p>
+
+<p><strong>Quantum:</strong> PipeWire’s app-facing equivalent to ALSA/JACK periods.</p>
+
+<p><strong>Buffer size:</strong> the total amount of audio which an input ALSA device can buffer for an app to read, or can be buffered by an app for an output ALSA device to play. Always at least 2 periods long.</p>
+
+<p><strong>Available frames:</strong> The number of frames (channel-independent samples) of audio readable/buffered (for input streams) or writable (for output streams).</p>
+
+<p><strong>“Buffered” frames:</strong> For input devices, this matches available (readable) frames. For output devices, this equals the buffer size minus available (writable) frames.</p>
+
+<p><strong>hw devices, plugins, etc:</strong> See <a href="https://www.volkerschatz.com/noise/alsa.html">https://www.volkerschatz.com/noise/alsa.html</a>.</p>
+
+<h2 id="minimum-achievable-inputoutputduplex-latency">Minimum achievable input/output/duplex latency</h2>
+
+<p>The minimum achievable audio latency at a given period size is achieved by having 2 periods of total capture/playback buffering between hardware and a app (RtApiAlsa, JACK2, or PipeWire).</p>
+
+<ul>
+  <li>If an audio daemon mixes audio from multiple apps, it can only avoid adding latency if there is no buffering (but instead synchronous execution) between the daemon and apps. JACK2 in synchronous mode and PipeWire support this, but pipewire-alsa fails this test by default, so ALSA is not a zero-latency way of talking to PipeWire.</li>
+</ul>
+
+<p>For duplex streams, the total round-trip (microphone-to-speaker) latency of a duplex stream is <code class="language-plaintext highlighter-rouge">N</code> periods (the maximum amount of buffered audio in the output buffer). <code class="language-plaintext highlighter-rouge">N</code> is always ≥ 2 and almost always an integer.</p>
+
+<p>For capture and duplex streams, there are <code class="language-plaintext highlighter-rouge">0</code> to <code class="language-plaintext highlighter-rouge">1</code> periods of capture (microphone-to-screen) latency (since microphone input can occur at any time, but is always processed at period boundaries).</p>
+
+<p>For playback and duplex streams, there are <code class="language-plaintext highlighter-rouge">N-1</code> to <code class="language-plaintext highlighter-rouge">N</code> periods of playback (keyboard-to-speaker) latency (since keyboard input can occur at any point, but is always converted into audio at period boundaries).</p>
+
+<p>These values only include delay caused by audio buffers, and exclude extra latency in the input stack, display stack, sound drivers, resamplers, or ADC/DAC.</p>
+
+<p>Note that this article doesn’t cover the advantages of extra buffering, like smoothing over hitches, or JACK2 async mode ensuring that an app that stalls won’t cause the system audio and all apps to xrun. I have not studied JACK2 async mode though.</p>
+
+<h2 id="avoid-blocking-writes-both-exclusive-and-shared-output-only">Avoid blocking writes (both exclusive and shared, output only)</h2>
+
+<p>If your app generates one output period of audio at a time and you want to minimize keypress-to-audio latency, regardless if your app outputs to hardware devices or pull-mode daemons, it should never rely on blocking writes to act as output backpressure. Instead it should wait until 1 period of audio is writable, <em>then</em> generate 1 period of audio and nonblocking-write it. (This does not apply to duplex apps, since waiting for available <em>input</em> data effectively acts as <em>output</em> throttling.)</p>
+
+<p>If your app generates audio <em>before</em> performing blocking writes for throttling, you will generate a new period of audio as soon as the previous period of audio is written (a full period of real time before a new period of audio is writable). This audio gets buffered for an extra period (while <code class="language-plaintext highlighter-rouge">snd_pcm_writei()</code> blocks) before reaching the speakers, so <strong>external (eg. keyboard) input takes a period longer to be audible.</strong></p>
+
+<p>(Note that avoiding blocking writes isn’t necessarily beneficial if you don’t generate and play audio in chunks synchronized with output periods.)</p>
+
+<p><strong>Issue:</strong> RtAudio relies on blocking <code class="language-plaintext highlighter-rouge">snd_pcm_writei</code> in pure-output streams. This adds 1 period of keyboard-to-speaker latency to output streams. (It also relies on blocking <code class="language-plaintext highlighter-rouge">snd_pcm_writei</code> for duplex streams, but this is essentially harmless since RtAudio first blocks on <code class="language-plaintext highlighter-rouge">snd_pcm_readi</code>, and by the time the function returns, if the input and output streams are synchronized <code class="language-plaintext highlighter-rouge">snd_pcm_writei</code> is effectively a nonblocking write call.)</p>
+
+<h3 id="alsa-blocking-readswrites-vs-snd_pcm_wait-vs-poll">ALSA: blocking reads/writes vs. snd_pcm_wait() vs. poll()</h3>
+
+<p>Making a blocking call to <code class="language-plaintext highlighter-rouge">snd_pcm_readi()</code> before generating sound is basically fine and does not add latency relative to nonblocking reads (<code class="language-plaintext highlighter-rouge">snd_pcm_sw_params_set_avail_min(1 period)</code> during setup, and calling <code class="language-plaintext highlighter-rouge">snd_pcm_wait()</code> before every read).</p>
+
+<p>On the other hand, generating sound then making a blocking call to <code class="language-plaintext highlighter-rouge">snd_pcm_writei()</code> (in output-only streams) adds a full period of keyboard-to-speaker latency relative to nonblocking writes (<code class="language-plaintext highlighter-rouge">snd_pcm_sw_params_set_avail_min(unused_buffer_size + 1 period)</code> during setup, and calling <code class="language-plaintext highlighter-rouge">snd_pcm_wait()</code> before generating and writing audio).</p>
+
+<p><code class="language-plaintext highlighter-rouge">poll()</code> has the same latency as <code class="language-plaintext highlighter-rouge">snd_pcm_wait()</code> and is more difficult to setup. The advantage is that you can pass in an extra file descriptor, allowing the main thread to interrupt the audio thread if <code class="language-plaintext highlighter-rouge">poll/snd_pcm_wait()</code> is stuck waiting on a stalled ALSA device. (I’m not sure if stalled ALSA is common, but I’ve seen stalled shared-mode WASAPI happen.)</p>
+
+<h2 id="avoid-buffering-shared-output-streams-output-and-duplex">Avoid buffering shared output streams (output and duplex)</h2>
+
+<p>Most apps use shared-mode streams, since exclusive-mode streams take up an entire audio device, preventing other apps from playing sound. Shared-mode streams generally communicate with a userspace audio daemon<sup id="fnref:1" role="doc-noteref"><a href="#fn:1" class="footnote" rel="footnote">1</a></sup>, which is responsible for mixing audio from various programs and feeding it into hardware sound buffers, and ideally even routing audio from app to app.</p>
+
+<p>If an app needs a output-only or duplex shared-mode stream, and must avoid unnecessary output latency, it should not buffer output audio itself (or generate audio <em>before</em> performing a blocking write, discussed above). Instead it should wait for the daemon to request output audio (and optionally provide input audio), <em>then</em> generate output audio and send it to the daemon. This minimizes output latency, and in the case of duplex streams, enables <em>zero-latency</em> app chaining between apps in an audio graph! To achieve this, the pull-mode mixing daemon (for example JACK2 or PipeWire) requests audio from the first app, and synchronously passes it to later apps within the <em>same period</em> of real-world time. Sending audio through two apps in series has zero added latency compared to sending audio through one app. The downside is that if you chain too many apps, JACK2 can’t finish ticking all the apps in a single period, and fails to output audio to the speakers in time, resulting in an audio glitch or xrun.</p>
+
+<p><strong>Issue:</strong> Any ALSA app talking to pulseaudio-alsa or pipewire-alsa (and possibly any PulseAudio app talking to pipewire-pulse) will perform extra buffering. Hopefully RtAudio, PortAudio, etc. will all add PipeWire backends someday (SDL2 already has it: <a href="https://www.phoronix.com/scan.php?page=news_item&amp;px=SDL2-Lands-PipeWire-Audio">https://www.phoronix.com/scan.php?page=news_item&amp;px=SDL2-Lands-PipeWire-Audio</a>).</p>
+
+<p>As a result, for the remainder of the article, I will be focusing on using ALSA to talk to <em>hardware</em> devices.</p>
+
+<h2 id="buffer-1-2-periods-in-exclusive-output-streams-output-and-duplex">Buffer 1-2 periods in exclusive output streams (output and duplex)</h2>
+
+<p>It is useful for some apps to open hardware devices directly (such that no other app can output or even receive audio), using exclusive-mode APIs like ALSA. These apps include audio daemons like PipeWire and JACK2 (which mix audio output from multiple shared-mode apps), or DAWs (which occupy an entire audio device for low-latency low-overhead audio recording and playback).</p>
+
+<p>Apps which open hardware in exclusive mode must handle output timing in real-world time themselves. They must read input audio as the hardware writes it into buffers, and send output audio to the buffers <em>ahead</em> of the hardware playing it back.</p>
+
+<p>In well-designed duplex apps that talk to hardware, such as jack2 talking to ALSA, the general approach is:</p>
+
+<ul>
+  <li>Pick a mic-to-speaker delay (called <code class="language-plaintext highlighter-rouge">used_buffer_size</code> and measured in frames).</li>
+  <li>Pick a period size, which divides <code class="language-plaintext highlighter-rouge">used_buffer_size</code> into <code class="language-plaintext highlighter-rouge">N</code> periods. <code class="language-plaintext highlighter-rouge">N</code> is usually an integer ≥ 2.</li>
+  <li>Tell ALSA to allocate an input and output buffer, each of size ≥ <code class="language-plaintext highlighter-rouge">used_buffer_size</code>, each with the correct period size.</li>
+  <li>Write <code class="language-plaintext highlighter-rouge">used_buffer_size</code> frames of silence to the output</li>
+</ul>
+
+<p>Then loop:</p>
+
+<ul>
+  <li>wait for 1 period/block of input to be available/readable, and 1 period/block of output to play and be available/writable. JACK2 uses <code class="language-plaintext highlighter-rouge">poll()</code>, if you don’t need cancellation you can use <code class="language-plaintext highlighter-rouge">snd_pcm_wait()</code> or even blocking <code class="language-plaintext highlighter-rouge">snd_pcm_readi()</code>.</li>
+  <li>read 1 period of input, and pass it to the user callback which generates 1 period of output</li>
+  <li>write 1 period of output into the available/writable room</li>
+</ul>
+
+<h2 id="implementing-exclusive-mode-duplex-like-jack2">Implementing exclusive-mode duplex like JACK2</h2>
+
+<p>JACK2’s ALSA backend, and this guide, assume the input and output device in a duplex pair share the same underlying sample clock and never go out of sync. Calling <code class="language-plaintext highlighter-rouge">snd_pcm_link()</code> on two streams is supposed to succeed if and only if they share the same sample clock, buffer size and period count, etc. (the exact criteria are undocumented, and I didn’t read the kernel source yet). If it succeeds, it not only starts and stops the streams together, but is supposed to synchronize the input’s write pointer and the output’s read pointer.</p>
+
+<p>PipeWire supports rate-matching resampling (<a href="https://gitlab.freedesktop.org/pipewire/pipewire/-/wikis/FAQ#how-are-multiple-devices-handled">link</a>), but (like timer-based scheduling) it introduces a great deal of complexity (<em>heuristic</em> clock skew estimation, resampling latency compensation), which I have not studied, is out of scope for opening a simple duplex stream, and <em>actively detracts</em> from learning the fundamentals.</p>
+
+<p>Note that <code class="language-plaintext highlighter-rouge">unused_buffer_size &gt; 0</code> is also incidental complexity, and not essential to understanding the concepts. Normally <code class="language-plaintext highlighter-rouge">buffer_size = N periods</code>.</p>
+
+<p>On ALSA, you can implement full duplex period-based audio by:</p>
+
+<ul>
+  <li>Optionally(?) open input and output <code class="language-plaintext highlighter-rouge">snd_pcm_t</code> in <code class="language-plaintext highlighter-rouge">SND_PCM_NONBLOCK</code>.</li>
+  <li>Setup both the input and output streams with <code class="language-plaintext highlighter-rouge">N</code> periods of audio. <code class="language-plaintext highlighter-rouge">N</code> is selected by the user, and is usually 2-4. (If the device only supports <code class="language-plaintext highlighter-rouge">&gt;N</code> periods of audio, JACK2 can open the device with <code class="language-plaintext highlighter-rouge">&gt;N</code> periods, but simulate <code class="language-plaintext highlighter-rouge">N</code> periods of latency by never filling the output device beyond <code class="language-plaintext highlighter-rouge">N</code> periods.)</li>
+  <li>Let <code class="language-plaintext highlighter-rouge">used_buffer_size = N periods</code> (in frames). This equals the total <code class="language-plaintext highlighter-rouge">buffer_size</code> unless the device only supports <code class="language-plaintext highlighter-rouge">&gt;N</code> periods.</li>
+  <li>Let <code class="language-plaintext highlighter-rouge">unused_buffer_size = buffer_size - used_buffer_size</code> (in frames). This equals 0 unless the device only supports <code class="language-plaintext highlighter-rouge">&gt;N</code> periods.</li>
+  <li>Set up the input and output streams, so software waiting/polling will wake up when the hardware writes or reads the correct amount of data.
+    <ul>
+      <li>For the input stream, we want to read as soon as 1 period of data is readable/available, so call <code class="language-plaintext highlighter-rouge">snd_pcm_sw_params_set_avail_min(1 period)</code>. You can skip this call if you open the device without <code class="language-plaintext highlighter-rouge">SND_PCM_NONBLOCK</code> and use blocking <code class="language-plaintext highlighter-rouge">snd_pcm_readi</code>, but to my knowledge <code class="language-plaintext highlighter-rouge">snd_pcm_sw_params_set_avail_min()</code> is not optional in the lower-overhead mmap mode.</li>
+    </ul>
+  </li>
+  <li>The output stream is more complicated if <code class="language-plaintext highlighter-rouge">unused_buffer_size != 0</code>.
+    <ul>
+      <li>We want to write 1 period of audio once <code class="language-plaintext highlighter-rouge">buffered ≤ used_buffer_size - 1 period</code> (in frames). And we know <code class="language-plaintext highlighter-rouge">writable/available = buffer_size - buffered</code>. So we want to write audio once <code class="language-plaintext highlighter-rouge">writable/available ≥ unused_buffer_size + 1 period</code>.</li>
+      <li>Call <code class="language-plaintext highlighter-rouge">snd_pcm_sw_params_set_avail_min(unused_buffer_size + 1 period)</code>, so polling/waiting on the output stream will unblock once that much audio is writable.</li>
+    </ul>
+  </li>
+  <li>For duplex streams, write <code class="language-plaintext highlighter-rouge">N</code> periods of silence. This can be skipped for output-only streams, but JACK2 does it for those too.</li>
+  <li><code class="language-plaintext highlighter-rouge">snd_pcm_start()</code> the input stream if available, and the output stream if available and not linked to the input.</li>
+</ul>
+
+<p>And in the audio loop:</p>
+
+<ul>
+  <li>Either call <code class="language-plaintext highlighter-rouge">poll()</code> (like JACK2, can wait on multiple fds) or <code class="language-plaintext highlighter-rouge">snd_pcm_wait</code> (simpler, synchronous), to wait until 1 period of room is readable from the input stream and writable to the output stream (excluding <code class="language-plaintext highlighter-rouge">unused_buffer_size</code>).
+    <ul>
+      <li>At this point, we have <code class="language-plaintext highlighter-rouge">N-1</code> periods of time to generate audio, before the input buffer runs out of room for capturing audio and the output runs out of buffered audio to play. This is why <code class="language-plaintext highlighter-rouge">N</code> must be greater than 1; if not we have <em>no</em> time to generate 1 period of audio to play.</li>
+    </ul>
+  </li>
+  <li>Read 1 period of audio from the input buffer, generate 1 period of output audio, and write it to the output buffer.
+    <ul>
+      <li>Now the output buffer holds <code class="language-plaintext highlighter-rouge">≤ used_buffer_size</code> frames, leaving <code class="language-plaintext highlighter-rouge">≥ unused_buffer_size</code> room writable/available.</li>
+    </ul>
+  </li>
+</ul>
+
+<h3 id="rtaudio-gets-duplex-wrong-can-have-xruns-and-glitches">RtAudio gets duplex wrong, can have xruns and glitches</h3>
+
+<p><strong>Issue:</strong> RtAudio opens and polls an ALSA duplex stream (in this case, duplex.cpp with <a href="https://github.com/nyanpasu64/rtaudio/tree/alsa-duplex-buffering">extra debug prints added</a>, opening my motherboard’s hw device) by:</p>
+
+<ul>
+  <li>Don’t fill the output with silence.</li>
+  <li>Call <code class="language-plaintext highlighter-rouge">snd_pcm_sw_params_set_start_threshold()</code> on both streams (though RtAudio only triggers on the input, which starts both streams).</li>
+  <li><code class="language-plaintext highlighter-rouge">snd_pcm_link()</code> the input and output streams so they both start at the same time. Setup the streams the same way regardless if it succeeds or fails. (On my motherboard audio, it succeeds.)</li>
+</ul>
+
+<p>Then loop:</p>
+
+<ul>
+  <li>Call <code class="language-plaintext highlighter-rouge">snd_pcm_readi(1 period)</code> of input (blocking until available), and pass it to the user callback which generates 1 period of output.
+    <ul>
+      <li>Because RtAudio calls <code class="language-plaintext highlighter-rouge">snd_pcm_sw_params_set_start_threshold</code> on the input stream, and the two streams are linked, <code class="language-plaintext highlighter-rouge">snd_pcm_readi()</code> starts both the input and output streams <em>immediately</em> (upon call, not upon return). The output stream is started with no data inside, and tries to play the absence of data. It’s a miracle it doesn’t xrun immediately.</li>
+      <li>Once the input stream has 1 period of input, <code class="language-plaintext highlighter-rouge">snd_pcm_readi</code> returns. By this point, the output stream has more <code class="language-plaintext highlighter-rouge">snd_pcm_avail()</code> than the total buffer size, and <em>negative</em> <code class="language-plaintext highlighter-rouge">snd_pcm_delay()</code>, yet <em>somehow</em> it does not xrun on the first <code class="language-plaintext highlighter-rouge">snd_pcm_writei()</code>.</li>
+    </ul>
+  </li>
+  <li>Call <code class="language-plaintext highlighter-rouge">snd_pcm_writei(1 period)</code> of output. This does not block since there are three periods available/writable (or two if the input/output streams are not linked).
+    <ul>
+      <li>This is supposed to be called when there is 1 period of empty/available space in the buffer to write to. Instead it’s called when there is 1 period of empty space <em>more</em> than the entire buffer size! I don’t understand how ALSA even allows this.</li>
+    </ul>
+  </li>
+</ul>
+
+<h3 id="fixing-rtaudio-output-and-duplex">Fixing RtAudio output and duplex</h3>
+
+<p>To resolve this for duplex streams, the easiest approach is to change stream starting:</p>
+
+<ul>
+  <li>Write 1 full buffer (or the used portion) of silence into the output.</li>
+  <li>Don’t call <code class="language-plaintext highlighter-rouge">snd_pcm_sw_params_set_start_threshold()</code> on the output stream of a duplex pair. Instead use <code class="language-plaintext highlighter-rouge">snd_pcm_link()</code> to start the output stream upon the first input read (or if <code class="language-plaintext highlighter-rouge">snd_pcm_link()</code> fails, start the output stream yourself before the first input read).</li>
+</ul>
+
+<p>This approach fails for output-only streams. To resolve the issue in both duplex and output streams, you must:</p>
+
+<ul>
+  <li>Call <code class="language-plaintext highlighter-rouge">snd_pcm_sw_params_set_avail_min(unused_buffer_size + 1 period)</code> before starting the output stream.</li>
+  <li>Call <code class="language-plaintext highlighter-rouge">snd_pcm_wait()</code> (or <code class="language-plaintext highlighter-rouge">poll()</code>) on the output stream every period, <em>before</em> generating audio.</li>
+</ul>
+
+<p>I haven’t looked into how RtAudio stops ALSA streams (with or without <code class="language-plaintext highlighter-rouge">snd_pcm_link()</code>), then starts them again, and what happens if you call them quickly enough that the buffers haven’t fully drained yet.</p>
+
+<h2 id="optional-replacing-blocking-readswrites-with-cancellable-polling">(optional) Replacing blocking reads/writes with cancellable polling</h2>
+
+<p>RtAudio needs to use polling to avoid extra latency in output-only streams. Should it be used for duplex and input-only streams as well? Is it worth adding an extra pollfd for cancelling blocking writes (possibly replacing the condvar)?</p>
+
+<p>I don’t know how to refactor RtAudio to allow cancelling a blocked <code class="language-plaintext highlighter-rouge">snd_pcm_readi/writei</code>. Maybe pthread cancellation is sufficient, I don’t know. If not, one JACK2 and cpal-inspired approach is:</p>
+
+<ul>
+  <li>Open all <code class="language-plaintext highlighter-rouge">snd_pcm_t</code> in <code class="language-plaintext highlighter-rouge">SND_PCM_NONBLOCK</code></li>
+  <li>Fetch fds for each <code class="language-plaintext highlighter-rouge">snd_pcm_t</code> using <code class="language-plaintext highlighter-rouge">snd_pcm_poll_descriptors()</code></li>
+  <li>Share an interrupt pipefd/eventfd between the GUI and audio thread</li>
+  <li>In the audio callback:
+    <ul>
+      <li><code class="language-plaintext highlighter-rouge">poll()</code> the input, output, and interrupt fds</li>
+      <li>Pass the result into <code class="language-plaintext highlighter-rouge">snd_pcm_poll_descriptors_revents()</code></li>
+      <li>Only perform non-blocking PCM reads/writes, or exit the loop if the interrupt fd is signalled.</li>
+    </ul>
+  </li>
+</ul>
+
+<p>Unfortunately this requires a pile of refactoring for relatively little gain.</p>
+
+<h2 id="is-rtaudios-current-approach-appropriate-for-low-latency-pipewire-alsa">Is RtAudio’s current approach appropriate for low-latency pipewire-alsa?</h2>
+
+<p><strong>Update: No.</strong></p>
+
+<p>pipewire-alsa in its current form (<a href="https://gitlab.freedesktop.org/pipewire/pipewire/-/commit/774ade1467b8c68ac9646624d941be994bd3702b">774ade146</a>) is wholly unsuitable for low-latency audio.</p>
+
+<p>I use <code class="language-plaintext highlighter-rouge">jack_iodelay</code> to measure signal latency, by using Helvum (a PipeWire graph editor) to route <code class="language-plaintext highlighter-rouge">jack_iodelay</code>’s output (which generates audio) through other nodes (which should pass-through audio with a delay) and back into its input (which measures audio and determines latency). When <code class="language-plaintext highlighter-rouge">jack_iodelay</code> is routed through hardware alone, it reports the usual 2 periods/quantums of latency. When I start RtAudio’s ALSA duplex app with period matched to the PipeWire quantum (which should add only 1 period of latency since <code class="language-plaintext highlighter-rouge">snd_pcm_link()</code> fails), and route <code class="language-plaintext highlighter-rouge">jack_iodelay</code> through hardware and duplex in series, <code class="language-plaintext highlighter-rouge">jack_iodelay</code> reports a whopping 7 periods of latency. My guess is that pipewire-alsa adds a full 2 periods of buffering to both its input and output streams. I’m not sure if I have the motivation to understand and fix it.</p>
+
+<p><strong>Earlier:</strong></p>
+
+<p>RtAudio doesn’t write silence to the output of a duplex stream before starting the streams, and only writes to the output stream once one period of data arrives at the input stream. This is unambiguously wrong for hw device streams. Is it the best way to achieve zero-latency alsa passthrough, when using the pipewire-alsa ALSA plugin? I don’t know if it works or if the output stream xruns, I don’t know if this is contractually guaranteed to work, and I’d have to test it and read the pipewire-alsa source (<a href="https://gitlab.freedesktop.org/pipewire/pipewire/-/blob/master/pipewire-alsa/alsa-plugins/pcm_pipewire.c">link</a>).</p>
+
+<p>Is it possible to achieve low-latency <em>output-only</em> ALSA, perhaps by waiting until the buffer is entirely empty (<code class="language-plaintext highlighter-rouge">snd_pcm_sw_params_set_avail_min()</code>)? Again I don’t know, and I’d have to test.</p>
+
+<h2 id="push-mode-audio-loses-the-battle-before-its-even-fought">Push-mode audio loses the battle before it’s even fought</h2>
+
+<p>I hear push-mode mixing daemons like PulseAudio (or possibly WASAPI) are fundamentally bad designs, incompatible with low-latency or consistent-latency audio output.</p>
+
+<p><a href="https://superpowered.com/androidaudiopathlatency">https://superpowered.com/androidaudiopathlatency</a> (<a href="https://news.ycombinator.com/item?id=9386994">discussion</a>) is an horror story. In fact I read elsewhere that pre-AAudio Android duplex loopback latency is <em>different</em> on every run; I can no longer recall the source, but it’s entirely consistent with the user application’s own ring buffering, or if input and output streams were started separately and not started and run in sync at a driver level like <code class="language-plaintext highlighter-rouge">snd_pcm_link</code>.</p>
+
+<p>Note that Android audio may have improved since then, see AAudio and <a href="https://android-developers.googleblog.com/2021/03/an-update-on-androids-audio-latency.html">https://android-developers.googleblog.com/2021/03/an-update-on-androids-audio-latency.html</a>.</p>
+<div class="footnotes" role="doc-endnotes">
+  <ol>
+    <li id="fn:1" role="doc-endnote">
+      <p>ALSA dmix may be kernel-based. I’m not sure, and I haven’t looked into it. <a href="#fnref:1" class="reversefootnote" role="doc-backlink">&#8617;</a></p>
+    </li>
+  </ol>
+</div>
+
+  </div>
+
+  <script src="https://utteranc.es/client.js"
+        repo="nyanpasu64/nyanpasu64.github.io"
+        issue-term="pathname"
+        theme="github-light"
+        crossorigin="anonymous"
+        async>
+</script>
+
+
+  <a class="u-url" href="/blog/low-latency-audio-output-duplex-alsa/" hidden></a>
+</article>
+
+      </div>
+    </main><footer class="site-footer h-card">
+  <data class="u-url" href="/"></data>
+
+  <div class="wrapper">
+
+    <!-- <h2 class="footer-heading">nyanpasu64&#39;s blog [OLD]</h2> -->
+
+    <div class="footer-col-wrapper">
+      <div class="footer-col footer-col-1">
+        <ul class="contact-list">
+          <li class="p-name">
+            nyanpasu64&#39;s blog [OLD]
+          </li>
+        </ul>
+      </div>
+
+      <div class="footer-col footer-col-2"><ul class="social-media-list"><li><a href="https://github.com/nyanpasu64"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#github"></use></svg> <span class="username">nyanpasu64</span></a></li><li><a href="https://write.as/nyanpasu64"><span class="username">My microblog</span></a></li>
+</ul>
+</div>
+
+      <div class="footer-col footer-col-3">
+        <p>Adventures in programming, DSP, and chiptune</p>
+      </div>
+    </div>
+
+  </div>
+
+</footer>
+</body>
+
+</html>
