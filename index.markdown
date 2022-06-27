@@ -9,3 +9,5 @@ title: Home
 Hi there! I'm nyanpasu64 and I like headpats.
 
 This is my blog about programming, DSP, and possibly computer music and chiptune, where I share things that others might enjoy or learn from.
+
+<a class="page-link" href="https://nyanpasu64.gitlab.io">This site has moved!</a>
